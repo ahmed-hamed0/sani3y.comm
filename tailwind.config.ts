@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -18,6 +19,9 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				tajawal: ['Tajawal', 'sans-serif'],
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
@@ -25,12 +29,28 @@ export default {
 				background: 'hsl(var(--background))',
 				foreground: 'hsl(var(--foreground))',
 				primary: {
-					DEFAULT: 'hsl(var(--primary))',
-					foreground: 'hsl(var(--primary-foreground))'
+					DEFAULT: '#3CAEA3', // main teal
+					foreground: '#FFFFFF',
+					light: '#8ED1CB',
+					dark: '#2D827C'
 				},
 				secondary: {
-					DEFAULT: 'hsl(var(--secondary))',
-					foreground: 'hsl(var(--secondary-foreground))'
+					DEFAULT: '#F6AB6C', // orange
+					foreground: '#1A1A1A',
+					light: '#FBCFAD',
+					dark: '#D48A4F'
+				},
+				accent: {
+					DEFAULT: '#20639B', // blue
+					foreground: '#FFFFFF',
+					light: '#5D97C8',
+					dark: '#174976'
+				},
+				neutral: {
+					DEFAULT: '#F6F7F8', // light gray
+					foreground: '#1A1A1A',
+					light: '#FFFFFF',
+					dark: '#E0E2E5'
 				},
 				destructive: {
 					DEFAULT: 'hsl(var(--destructive))',
@@ -39,10 +59,6 @@ export default {
 				muted: {
 					DEFAULT: 'hsl(var(--muted))',
 					foreground: 'hsl(var(--muted-foreground))'
-				},
-				accent: {
-					DEFAULT: 'hsl(var(--accent))',
-					foreground: 'hsl(var(--accent-foreground))'
 				},
 				popover: {
 					DEFAULT: 'hsl(var(--popover))',
