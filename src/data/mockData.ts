@@ -126,7 +126,8 @@ export const CRAFTSMEN: Craftsman[] = [
     availability: true,
     skills: ['تركيب سباكة حديثة', 'إصلاح تسريبات', 'صيانة مضخات المياه'],
     experience: 15,
-    createdAt: new Date('2022-05-15')
+    createdAt: new Date('2022-05-15'),
+    isOnline: true
   },
   {
     id: 'c2',
@@ -147,7 +148,8 @@ export const CRAFTSMEN: Craftsman[] = [
     availability: true,
     skills: ['تركيب لوحات كهرباء', 'إصلاح أعطال كهربائية', 'تمديدات كهربائية'],
     experience: 10,
-    createdAt: new Date('2022-06-20')
+    createdAt: new Date('2022-06-20'),
+    isOnline: false
   },
   {
     id: 'c3',
@@ -168,7 +170,8 @@ export const CRAFTSMEN: Craftsman[] = [
     availability: false,
     skills: ['دهانات البلاستيك', 'دهانات الزيت', 'ورق الحائط', 'رسم وتزيين'],
     experience: 12,
-    createdAt: new Date('2021-12-10')
+    createdAt: new Date('2021-12-10'),
+    isOnline: true
   },
   {
     id: 'c4',
@@ -189,7 +192,8 @@ export const CRAFTSMEN: Craftsman[] = [
     availability: true,
     skills: ['تصنيع أثاث', 'إصلاح أثاث قديم', 'تركيب أبواب وشبابيك', 'تفصيل مطابخ'],
     experience: 9,
-    createdAt: new Date('2023-02-14')
+    createdAt: new Date('2023-02-14'),
+    isOnline: false
   },
   {
     id: 'c5',
@@ -210,7 +214,8 @@ export const CRAFTSMEN: Craftsman[] = [
     availability: true,
     skills: ['تركيب تكييفات', 'صيانة دورية', 'إصلاح أعطال', 'تنظيف وتعقيم'],
     experience: 7,
-    createdAt: new Date('2023-05-20')
+    createdAt: new Date('2023-05-20'),
+    isOnline: true
   }
 ];
 

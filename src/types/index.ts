@@ -1,4 +1,3 @@
-
 export type UserRole = 'client' | 'craftsman';
 
 export interface User {
@@ -30,6 +29,7 @@ export interface Craftsman extends User {
   availability: boolean;
   skills: string[];
   experience: number; // in years
+  isOnline: boolean; // Added this property
 }
 
 export interface Job {

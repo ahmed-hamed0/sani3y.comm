@@ -1,5 +1,6 @@
+
 import { useParams, Link } from 'react-router-dom';
-import { Star, Phone, Mail, MapPin, User, Circle, Calendar, Award, MessageSquare } from 'lucide-react';
+import { Star, Phone, Mail, MapPin, User, Circle, Calendar, Award, MessageSquare, CheckCircle } from 'lucide-react';
 import { CRAFTSMEN } from '@/data/mockData';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
