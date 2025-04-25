@@ -1,5 +1,6 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Star, Phone, MapPin, User, Circle, Calendar, Award, MessageSquare, CheckCircle, whatsapp as Whatsapp } from 'lucide-react';
+import { Star, Phone, MapPin, User, Circle, Calendar, Award, MessageSquare, CheckCircle } from 'lucide-react';
+import { BsWhatsapp } from 'react-icons/bs';
 import { CRAFTSMEN } from '@/data/mockData';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -111,7 +112,7 @@ const CraftsmanProfile = () => {
               className="flex items-center justify-center gap-2 bg-green-500 text-white hover:bg-green-600"
               onClick={handleWhatsApp}
             >
-              <Whatsapp className="h-4 w-4" />
+              <BsWhatsapp className="h-4 w-4" />
               <span>واتساب</span>
             </Button>
           </div>
