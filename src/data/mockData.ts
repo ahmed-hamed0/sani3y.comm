@@ -1,37 +1,108 @@
-
 import { Craftsman, Job, CategoryType, GovernorateType } from '../types';
 
 export const CATEGORIES: CategoryType[] = [
-  { id: 'plumber', name: 'سباك', icon: 'wrench' },
-  { id: 'electrician', name: 'كهربائي', icon: 'bolt' },
-  { id: 'painter', name: 'نقاش', icon: 'edit' },
-  { id: 'carpenter', name: 'نجار', icon: 'wrench' },
-  { id: 'tiler', name: 'مبلط', icon: 'settings' },
-  { id: 'ac_technician', name: 'فني تكييف', icon: 'settings' },
-  { id: 'satellite', name: 'فني دش', icon: 'settings' },
-  { id: 'gypsum', name: 'فني جبس', icon: 'settings' },
+  { id: 'plumber', name: 'سباك صحي', icon: 'wrench' },
+  { id: 'electrician', name: 'كهربائي', icon: 'zap' },
+  { id: 'painter', name: 'نقاش', icon: 'paint-roller' },
+  { id: 'satellite', name: 'فنى تركيب اطباق الدش', icon: 'satellite-dish' },
+  { id: 'sanitary', name: 'فني صحي', icon: 'shower-head' },
+  { id: 'ac', name: 'فني تكييف', icon: 'air-vent' },
+  { id: 'carpenter', name: 'نجار', icon: 'hammer' },
+  { id: 'builder', name: 'بناء', icon: 'brick-wall' },
+  { id: 'furniture', name: 'فني تركيب اثاث', icon: 'sofa' },
+  { id: 'windows', name: 'فني تركيب شبابيك', icon: 'window' },
+  { id: 'mechanic', name: 'ميكانيكي سيارات', icon: 'car' },
+  { id: 'tire', name: 'فني كاوتش', icon: 'wheel' },
+  { id: 'computer', name: 'فني صيانة حاسوب', icon: 'computer' },
+  { id: 'network', name: 'فني شبكات', icon: 'phone' },
+  { id: 'camera', name: 'فني كاميرات مراقبة', icon: 'camera' },
+  { id: 'tv', name: 'فني تصليح تلفزيونات', icon: 'tv' },
+  { id: 'lighting', name: 'فني انارة', icon: 'lightbulb' },
+  { id: 'garden', name: 'منسق حدائق', icon: 'tree-pine' },
+  { id: 'driver', name: 'سائق', icon: 'truck' },
+  { id: 'gypsum', name: 'فني جبس بورد', icon: 'hammer' }
 ];
 
 export const GOVERNORATES: GovernorateType[] = [
   {
     id: 'cairo',
     name: 'القاهرة',
-    cities: ['مدينة نصر', 'المعادي', 'مصر الجديدة', 'القاهرة الجديدة', 'العبور']
+    cities: ['مدينة نصر', 'المعادي', 'مصر الجديدة', 'القاهرة الجديدة', 'العبور', 'حلوان', 'المقطم', 'شبرا', 'عين شمس', 'المطرية']
   },
   {
     id: 'giza',
     name: 'الجيزة',
-    cities: ['6 أكتوبر', 'الشيخ زايد', 'الهرم', 'فيصل', 'العجوزة']
+    cities: ['6 أكتوبر', 'الشيخ زايد', 'الهرم', 'فيصل', 'العجوزة', 'المهندسين', 'الدقي', 'العمرانية', 'بولاق الدكرور', 'إمبابة']
   },
   {
     id: 'alex',
     name: 'الإسكندرية',
-    cities: ['المنتزه', 'شرق الإسكندرية', 'وسط الإسكندرية', 'العامرية']
+    cities: ['المنتزه', 'شرق الإسكندرية', 'وسط الإسكندرية', 'العامرية', 'برج العرب', 'العجمي', 'الدخيلة', 'المعمورة', 'أبو قير', 'سيدي جابر']
+  },
+  {
+    id: 'dakahlia',
+    name: 'الدقهلية',
+    cities: ['المنصورة', 'طلخا', 'ميت غمر', 'دكرنس', 'أجا', 'منية النصر', 'السنبلاوين', 'بلقاس', 'المنزلة', 'تمي الأمديد']
   },
   {
     id: 'sharkia',
     name: 'الشرقية',
-    cities: ['الزقازيق', 'العاشر من رمضان', 'منيا القمح', 'فاقوس']
+    cities: ['الزقازيق', 'العاشر من رمضان', 'منيا القمح', 'فاقوس', 'بلبيس', 'أبو حماد', 'ههيا', 'أبو كبير', 'ديرب نجم', 'كفر صقر']
+  },
+  {
+    id: 'qualyubia',
+    name: 'القليوبية',
+    cities: ['بنها', 'قليوب', 'شبرا الخيمة', 'القناطر الخيرية', 'الخانكة', 'كفر شكر', 'طوخ', 'الخصوص', 'شبين القناطر', 'العبور']
+  },
+  {
+    id: 'gharbia',
+    name: 'الغربية',
+    cities: ['طنطا', 'المحلة الكبرى', 'كفر الزيات', 'زفتى', 'السنطة', 'قطور', 'بسيون', 'سمنود']
+  },
+  {
+    id: 'menoufia',
+    name: 'المنوفية',
+    cities: ['شبين الكوم', 'قويسنا', 'أشمون', 'الباجور', 'بركة السبع', 'منوف', 'تلا', 'الشهداء', 'سرس الليان']
+  },
+  {
+    id: 'beheira',
+    name: 'البحيرة',
+    cities: ['دمنهور', 'كفر الدوار', 'رشيد', 'إدكو', 'أبو المطامير', 'حوش عيسى', 'شبراخيت', 'كوم حمادة', 'دلنجات', 'المحمودية']
+  },
+  {
+    id: 'ismailia',
+    name: 'الإسماعيلية',
+    cities: ['الإسماعيلية', 'فايد', 'القنطرة شرق', 'القنطرة غرب', 'التل الكبير', 'أبو صوير', 'القصاصين']
+  },
+  {
+    id: 'suez',
+    name: 'السويس',
+    cities: ['السويس', 'الأربعين', 'عتاقة', 'الجناين', 'فيصل']
+  },
+  {
+    id: 'port_said',
+    name: 'بورسعيد',
+    cities: ['بورسعيد', 'بورفؤاد', 'العرب', 'الضواحي', 'المناخ', 'الزهور']
+  },
+  {
+    id: 'damietta',
+    name: 'دمياط',
+    cities: ['دمياط', 'دمياط الجديدة', 'رأس البر', 'فارسكور', 'كفر سعد', 'الزرقا', 'السرو', 'الروضة']
+  },
+  {
+    id: 'kafr_elsheikh',
+    name: 'كفر الشيخ',
+    cities: ['كفر الشيخ', 'دسوق', 'فوه', 'مطوبس', 'البرلس', 'بلطيم', 'سيدي سالم', 'قلين', 'الرياض', 'بيلا']
+  },
+  {
+    id: 'aswan',
+    name: 'أسوان',
+    cities: ['أسوان', 'أسوان الجديدة', 'دراو', 'كوم أمبو', 'نصر النوبة', 'ادفو', 'البصيلية']
+  },
+  {
+    id: 'luxor',
+    name: 'الأقصر',
+    cities: ['الأقصر', 'الأقصر الجديدة', 'طيبة', 'الزينية', 'البياضية', 'القرنة', 'أرمنت', 'الطود']
   }
 ];
 
@@ -48,7 +119,7 @@ export const CRAFTSMEN: Craftsman[] = [
       governorate: 'القاهرة',
       city: 'مدينة نصر'
     },
-    specialty: 'سباك',
+    specialty: 'سباك صحي',
     bio: 'فني سباكة محترف مع خبرة 15 عام في مجال تركيب وإصلاح السباكة المنزلية والتجارية',
     completedJobs: 48,
     gallery: ['/placeholder.svg', '/placeholder.svg', '/placeholder.svg'],
@@ -148,7 +219,7 @@ export const JOBS: Job[] = [
     id: 'j1',
     title: 'تصليح تسريب مياه في المطبخ',
     description: 'يوجد تسريب مياه تحت حوض المطبخ ويحتاج إلى إصلاح سريع',
-    category: 'سباك',
+    category: 'سباك صحي',
     location: {
       governorate: 'القاهرة',
       city: 'مدينة نصر',
@@ -167,7 +238,7 @@ export const JOBS: Job[] = [
     id: 'j2',
     title: 'تركيب غسالة أطباق جديدة',
     description: 'نحتاج تركيب غسالة أطباق في المطبخ مع توصيلات المياه والكهرباء',
-    category: 'سباك',
+    category: 'سباك صحي',
     location: {
       governorate: 'الجيزة',
       city: '6 أكتوبر',
@@ -184,7 +255,7 @@ export const JOBS: Job[] = [
   },
   {
     id: 'j3',
-    title: 'تركيب مروحة سقف في غرفتين',
+    title: 'تركيب مروحة سقف في غرفةتين',
     description: 'نحتاج تركيب مروحة سقف في غرفة النوم الرئيسية وغرفة المعيشة',
     category: 'كهربائي',
     location: {
