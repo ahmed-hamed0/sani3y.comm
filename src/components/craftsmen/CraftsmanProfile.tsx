@@ -1,15 +1,19 @@
-
-import { useParams, Link } from 'react-router-dom';
-import { Star, Phone, Mail, MapPin, User, Circle, Calendar, Award, MessageSquare, CheckCircle } from 'lucide-react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { Star, Phone, MapPin, User, Circle, Calendar, Award, MessageSquare, CheckCircle, WhatsApp } from 'lucide-react';
 import { CRAFTSMEN } from '@/data/mockData';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const CraftsmanProfile = () => {
   const { id } = useParams<{ id: string }>();
   const craftsman = CRAFTSMEN.find(c => c.id === id);
   const [showMessages, setShowMessages] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   
   if (!craftsman) {
     return (
@@ -22,6 +26,15 @@ const CraftsmanProfile = () => {
       </div>
     );
   }
+
+  const handleCall = () => {
+    window.location.href = `tel:${craftsman.phone}`;
+  };
+
+  const handleWhatsApp = () => {
+    const whatsappUrl = `https://wa.me/${craftsman.phone.replace(/\D/g, '')}`;
+    window.open(whatsappUrl, '_blank');
+  };
   
   return (
     <div className="container-custom py-8">
@@ -39,7 +52,7 @@ const CraftsmanProfile = () => {
             </span>
           </div>
           
-          <div className="flex-1 text-right">
+          <div className="flex-1 text-center">
             <h1 className="text-2xl md:text-3xl font-bold mb-2">{craftsman.name}</h1>
             <p className="text-primary text-xl mb-3">{craftsman.specialty}</p>
             
@@ -77,7 +90,11 @@ const CraftsmanProfile = () => {
             <Button asChild>
               <Link to={`/post-job?craftsman=${craftsman.id}`}>طلب خدمة</Link>
             </Button>
-            <Button variant="outline" className="flex items-center justify-center gap-2">
+            <Button 
+              variant="outline" 
+              className="flex items-center justify-center gap-2"
+              onClick={handleCall}
+            >
               <Phone className="h-4 w-4" />
               <span>اتصال</span>
             </Button>
@@ -88,6 +105,14 @@ const CraftsmanProfile = () => {
             >
               <MessageSquare className="h-4 w-4" />
               <span>رسالة</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              className="flex items-center justify-center gap-2 bg-green-500 text-white hover:bg-green-600"
+              onClick={handleWhatsApp}
+            >
+              <WhatsApp className="h-4 w-4" />
+              <span>واتساب</span>
             </Button>
           </div>
         </div>
@@ -133,9 +158,12 @@ const CraftsmanProfile = () => {
               
               <div className="mt-4">
                 <h3 className="font-semibold mb-2">المهارات:</h3>
-                <ul className="list-disc list-inside space-y-1 text-right">
+                <ul className="list-disc list-inside space-y-1 text-right" dir="rtl">
                   {craftsman.skills.map((skill, index) => (
-                    <li key={index}>{skill}</li>
+                    <li key={index} className="flex items-center gap-2 justify-end">
+                      {skill}
+                      <span className="text-primary">•</span>
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -168,7 +196,6 @@ const CraftsmanProfile = () => {
           <TabsContent value="reviews" className="md:col-span-1 bg-white rounded-lg shadow-md p-6">
             <h2 className="text-xl font-bold mb-6">تقييمات العملاء السابقين</h2>
             
-            {/* For now, we'll show a placeholder since we don't have real reviews */}
             <div className="text-center py-12 bg-gray-50 rounded-lg">
               <Star className="h-12 w-12 mx-auto text-gray-400 mb-2" />
               <p className="text-gray-500">لا توجد تقييمات حتى الآن</p>

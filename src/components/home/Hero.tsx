@@ -46,7 +46,7 @@ const Hero = () => {
               <Button 
                 asChild
                 variant="outline" 
-                className="border-white text-white hover:bg-accent text-lg"
+                className="bg-accent hover:bg-accent-dark text-white hover:text-white text-lg"
                 size="lg"
               >
                 <Link to="/sign-up?role=craftsman">سجل كصنايعي</Link>
