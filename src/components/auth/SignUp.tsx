@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -10,15 +9,21 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { CATEGORIES, GOVERNORATES } from '@/data/mockData';
 import { useToast } from '@/hooks/use-toast';
 
+const countryCodesData = [
+  { code: '+20', country: 'مصر', flag: '🇪🇬' },
+  { code: '+966', country: 'السعودية', flag: '🇸🇦' },
+  { code: '+971', country: 'الإمارات', flag: '🇦🇪' },
+];
+
 const SignUp = () => {
   const [searchParams] = useSearchParams();
   const defaultRole = searchParams.get('role') === 'craftsman' ? 'craftsman' : 'client';
   const [role, setRole] = useState<'client' | 'craftsman'>(defaultRole as 'client' | 'craftsman');
   const [selectedGovernorate, setSelectedGovernorate] = useState<string>('');
+  const [selectedCountryCode, setSelectedCountryCode] = useState('+20');
   const [step, setStep] = useState<number>(1);
   const { toast } = useToast();
 
-  // Form data state
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -32,12 +37,16 @@ const SignUp = () => {
     agreeTerms: false
   });
 
-  // Get cities based on selected governorate
   const cities = GOVERNORATES.find(g => g.name === selectedGovernorate)?.cities || [];
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === 'phone') {
+      const cleanedValue = value.replace(/[^\d]/g, '');
+      setFormData(prev => ({ ...prev, [name]: cleanedValue }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSelectChange = (name: string, value: string) => {
@@ -57,7 +66,6 @@ const SignUp = () => {
     e.preventDefault();
     
     if (step === 1) {
-      // Validate step 1 fields
       if (!formData.name || !formData.email || !formData.phone || !formData.password || !formData.confirmPassword) {
         toast({
           title: "خطأ في البيانات",
@@ -80,9 +88,7 @@ const SignUp = () => {
       return;
     }
     
-    // Handle form submission
     if (step === 2) {
-      // Validate step 2 fields
       if (!formData.governorate || !formData.city || (role === 'craftsman' && !formData.specialty)) {
         toast({
           title: "خطأ في البيانات",
@@ -101,7 +107,6 @@ const SignUp = () => {
         return;
       }
 
-      // Process signup (just a mock for now)
       toast({
         title: "تم إنشاء الحساب بنجاح",
         description: "مرحباً بك في صنايعي.كوم، ستتم إعادة توجيهك للصفحة الرئيسية",
@@ -117,7 +122,6 @@ const SignUp = () => {
     <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
       <h1 className="text-2xl font-bold mb-6 text-center">إنشاء حساب جديد</h1>
       
-      {/* Role Selection */}
       <div className="mb-6">
         <Label>نوع الحساب</Label>
         <RadioGroup 
@@ -137,7 +141,6 @@ const SignUp = () => {
       </div>
       
       <form onSubmit={handleNextStep}>
-        {/* Step 1: Basic Information */}
         {step === 1 && (
           <div className="space-y-4">
             <div>
@@ -163,13 +166,36 @@ const SignUp = () => {
             </div>
             <div>
               <Label htmlFor="phone">رقم الهاتف</Label>
-              <Input 
-                id="phone" 
-                name="phone" 
-                value={formData.phone}
-                onChange={handleChange}
-                required 
-              />
+              <div className="flex gap-2">
+                <Select
+                  value={selectedCountryCode}
+                  onValueChange={setSelectedCountryCode}
+                >
+                  <SelectTrigger className="w-[120px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {countryCodesData.map((country) => (
+                      <SelectItem key={country.code} value={country.code}>
+                        <span className="flex items-center gap-2">
+                          <span>{country.flag}</span>
+                          <span>{country.code}</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Input 
+                  id="phone" 
+                  name="phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  className="flex-1 text-left"
+                  dir="ltr"
+                  required 
+                />
+              </div>
             </div>
             <div>
               <Label htmlFor="password">كلمة المرور</Label>
@@ -196,7 +222,6 @@ const SignUp = () => {
           </div>
         )}
         
-        {/* Step 2: Additional Information */}
         {step === 2 && (
           <div className="space-y-4">
             <div>
@@ -238,7 +263,6 @@ const SignUp = () => {
               </Select>
             </div>
             
-            {/* Craftsman specific fields */}
             {role === 'craftsman' && (
               <>
                 <div>
@@ -286,7 +310,6 @@ const SignUp = () => {
           </div>
         )}
         
-        {/* Navigation Buttons */}
         <div className="mt-6 flex justify-between">
           {step === 2 && (
             <Button 
