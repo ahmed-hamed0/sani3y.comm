@@ -1,17 +1,15 @@
-
 import { useParams, Link } from 'react-router-dom';
-import { Star, Phone, Mail, MapPin, User, Check, Calendar, Award } from 'lucide-react';
+import { Star, Phone, Mail, MapPin, User, Circle, Calendar, Award, MessageSquare } from 'lucide-react';
 import { CRAFTSMEN } from '@/data/mockData';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState } from 'react';
 
 const CraftsmanProfile = () => {
   const { id } = useParams<{ id: string }>();
-  
-  // Find the craftsman with the matching ID
   const craftsman = CRAFTSMEN.find(c => c.id === id);
+  const [showMessages, setShowMessages] = useState(false);
   
-  // Handle the case when no matching craftsman is found
   if (!craftsman) {
     return (
       <div className="text-center py-12">
@@ -35,18 +33,16 @@ const CraftsmanProfile = () => {
               alt={craftsman.name}
               className="w-32 h-32 rounded-full object-cover border-4 border-primary"
             />
-            {craftsman.availability && (
-              <span className="absolute bottom-2 left-2 bg-green-500 p-1 rounded-full">
-                <Check className="h-5 w-5 text-white" />
-              </span>
-            )}
+            <span className={`absolute bottom-2 left-2 p-1 rounded-full ${craftsman.isOnline ? 'bg-green-500' : 'bg-gray-400'}`}>
+              <Circle className="h-5 w-5 text-white" fill={craftsman.isOnline ? "currentColor" : "none"} />
+            </span>
           </div>
           
-          <div className="flex-1 text-center md:text-right">
+          <div className="flex-1 text-right">
             <h1 className="text-2xl md:text-3xl font-bold mb-2">{craftsman.name}</h1>
             <p className="text-primary text-xl mb-3">{craftsman.specialty}</p>
             
-            <div className="flex flex-wrap justify-center md:justify-start gap-4 mb-4">
+            <div className="flex flex-wrap justify-center md:justify-end gap-4 mb-4">
               <div className="flex items-center">
                 <Star className="h-5 w-5 text-yellow-500 fill-yellow-500 ml-1" />
                 <span className="font-semibold">{craftsman.rating}</span>
@@ -64,7 +60,7 @@ const CraftsmanProfile = () => {
               </div>
             </div>
             
-            <div className="flex flex-wrap justify-center md:justify-start gap-3 mb-6">
+            <div className="flex flex-wrap justify-center md:justify-end gap-3 mb-6">
               {craftsman.skills.map((skill, index) => (
                 <span 
                   key={index} 
@@ -84,12 +80,25 @@ const CraftsmanProfile = () => {
               <Phone className="h-4 w-4" />
               <span>اتصال</span>
             </Button>
-            <Button variant="outline" className="flex items-center justify-center gap-2">
-              <Mail className="h-4 w-4" />
+            <Button 
+              variant="outline" 
+              className="flex items-center justify-center gap-2"
+              onClick={() => setShowMessages(!showMessages)}
+            >
+              <MessageSquare className="h-4 w-4" />
               <span>رسالة</span>
             </Button>
           </div>
         </div>
+        
+        {showMessages && (
+          <div className="mt-6 p-4 bg-neutral rounded-lg">
+            <h3 className="text-lg font-bold mb-4 text-right">المحادثة</h3>
+            <div className="text-center text-gray-500">
+              قم بتسجيل الدخول للتواصل مع الصنايعي
+            </div>
+          </div>
+        )}
       </div>
       
       {/* Profile Content */}
@@ -100,87 +109,71 @@ const CraftsmanProfile = () => {
           <TabsTrigger value="reviews">التقييمات</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="about" className="bg-white rounded-lg shadow-md p-6">
-          <div className="mb-6">
-            <h2 className="text-xl font-bold mb-3">نبذة عن الصنايعي</h2>
-            <p className="text-gray-700">{craftsman.bio}</p>
-          </div>
-          
-          <div className="mb-6">
-            <h2 className="text-xl font-bold mb-3">الخبرات والمهارات</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center">
-                <Award className="h-5 w-5 text-primary ml-2" />
-                <span>خبرة {craftsman.experience} سنوات</span>
-              </div>
-              
-              <div className="flex items-center">
-                <Check className="h-5 w-5 text-primary ml-2" />
-                <span>{craftsman.completedJobs} مهمة مكتملة</span>
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <TabsContent value="about" className="bg-white rounded-lg shadow-md p-6 text-right">
+            <div className="mb-6">
+              <h2 className="text-xl font-bold mb-3">نبذة عن الصنايعي</h2>
+              <p className="text-gray-700">{craftsman.bio}</p>
             </div>
             
-            <div className="mt-4">
-              <h3 className="font-semibold mb-2">المهارات:</h3>
-              <ul className="list-disc list-inside space-y-1">
-                {craftsman.skills.map((skill, index) => (
-                  <li key={index}>{skill}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
-          
-          <div>
-            <h2 className="text-xl font-bold mb-3">معلومات التواصل</h2>
-            <div className="space-y-3">
-              <div className="flex items-center">
-                <Phone className="h-5 w-5 text-gray-500 ml-2" />
-                <span>{craftsman.phone}</span>
-              </div>
-              <div className="flex items-center">
-                <Mail className="h-5 w-5 text-gray-500 ml-2" />
-                <span>{craftsman.email}</span>
-              </div>
-              <div className="flex items-center">
-                <MapPin className="h-5 w-5 text-gray-500 ml-2" />
-                <span>{craftsman.location.city}، {craftsman.location.governorate}</span>
-              </div>
-            </div>
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="gallery" className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-bold mb-6">معرض الأعمال السابقة</h2>
-          
-          {craftsman.gallery.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {craftsman.gallery.map((image, index) => (
-                <div key={index} className="aspect-square overflow-hidden rounded-md">
-                  <img
-                    src={image}
-                    alt={`عمل سابق ${index + 1}`}
-                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                  />
+            <div className="mb-6">
+              <h2 className="text-xl font-bold mb-3">الخبرات والمهارات</h2>
+              <div className="grid grid-cols-1 gap-4">
+                <div className="flex items-center">
+                  <Award className="h-5 w-5 text-primary ml-2" />
+                  <span>خبرة {craftsman.experience} سنوات</span>
                 </div>
-              ))}
+                
+                <div className="flex items-center">
+                  <CheckCircle className="h-5 w-5 text-primary ml-2" />
+                  <span>{craftsman.completedJobs} مهمة مكتملة</span>
+                </div>
+              </div>
+              
+              <div className="mt-4">
+                <h3 className="font-semibold mb-2">المهارات:</h3>
+                <ul className="list-disc list-inside space-y-1 text-right">
+                  {craftsman.skills.map((skill, index) => (
+                    <li key={index}>{skill}</li>
+                  ))}
+                </ul>
+              </div>
             </div>
-          ) : (
-            <div className="text-center py-12 bg-gray-50 rounded-lg">
-              <User className="h-12 w-12 mx-auto text-gray-400 mb-2" />
-              <p className="text-gray-500">لا توجد صور لأعمال سابقة</p>
-            </div>
-          )}
-        </TabsContent>
-        
-        <TabsContent value="reviews" className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-bold mb-6">تقييمات العملاء السابقين</h2>
+          </TabsContent>
           
-          {/* For now, we'll show a placeholder since we don't have real reviews */}
-          <div className="text-center py-12 bg-gray-50 rounded-lg">
-            <Star className="h-12 w-12 mx-auto text-gray-400 mb-2" />
-            <p className="text-gray-500">لا توجد تقييمات حتى الآن</p>
-          </div>
-        </TabsContent>
+          <TabsContent value="gallery" className="md:col-span-1 bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-xl font-bold mb-6">معرض الأعمال السابقة</h2>
+            
+            {craftsman.gallery.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {craftsman.gallery.map((image, index) => (
+                  <div key={index} className="aspect-square overflow-hidden rounded-md">
+                    <img
+                      src={image}
+                      alt={`عمل سابق ${index + 1}`}
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 bg-gray-50 rounded-lg">
+                <User className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+                <p className="text-gray-500">لا توجد صور لأعمال سابقة</p>
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="reviews" className="md:col-span-1 bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-xl font-bold mb-6">تقييمات العملاء السابقين</h2>
+            
+            {/* For now, we'll show a placeholder since we don't have real reviews */}
+            <div className="text-center py-12 bg-gray-50 rounded-lg">
+              <Star className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+              <p className="text-gray-500">لا توجد تقييمات حتى الآن</p>
+            </div>
+          </TabsContent>
+        </div>
       </Tabs>
     </div>
   );

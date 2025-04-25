@@ -2,9 +2,24 @@
 import { Link } from 'react-router-dom';
 import { Search, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { CATEGORIES } from '@/data/mockData';
+import { useState } from 'react';
+import { CATEGORIES, CRAFTSMEN } from '@/data/mockData';
 
 const Hero = () => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+
+  const handleSearch = () => {
+    if (!searchQuery.trim()) return;
+    
+    // Filter craftsmen based on search query
+    const results = CRAFTSMEN.filter(craftsman => 
+      craftsman.name.includes(searchQuery) || 
+      craftsman.specialty.includes(searchQuery)
+    );
+    setSearchResults(results);
+  };
+
   return (
     <div className="bg-primary py-16 md:py-24">
       <div className="container-custom">
@@ -31,7 +46,7 @@ const Hero = () => {
               <Button 
                 asChild
                 variant="outline" 
-                className="border-white text-white hover:bg-white/10 text-lg"
+                className="border-white text-white hover:bg-accent text-lg"
                 size="lg"
               >
                 <Link to="/sign-up?role=craftsman">سجل كصنايعي</Link>
@@ -59,13 +74,37 @@ const Hero = () => {
             <div className="bg-white p-6 rounded-lg shadow-lg">
               <h2 className="text-2xl font-bold mb-6 text-center">ابحث عن الخدمة التي تحتاجها</h2>
               <div className="flex items-center bg-gray-100 rounded-lg mb-6">
-                <Search className="mx-3 text-gray-500" size={20} />
                 <input
                   type="text"
                   placeholder="ما هي الخدمة التي تبحث عنها؟"
-                  className="bg-transparent border-none outline-none py-3 px-2 w-full"
+                  className="bg-transparent border-none outline-none py-3 px-4 w-full text-right"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                 />
+                <Button 
+                  variant="ghost" 
+                  className="px-3" 
+                  onClick={handleSearch}
+                >
+                  <Search className="text-gray-500" size={20} />
+                </Button>
               </div>
+              
+              {searchResults.length > 0 && (
+                <div className="max-h-48 overflow-y-auto">
+                  {searchResults.map(result => (
+                    <Link 
+                      key={result.id}
+                      to={`/craftsman/${result.id}`}
+                      className="block p-2 hover:bg-gray-100 rounded"
+                    >
+                      {result.name} - {result.specialty}
+                    </Link>
+                  ))}
+                </div>
+              )}
+
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {CATEGORIES.slice(0, 8).map(category => (
                   <Link 
@@ -75,7 +114,6 @@ const Hero = () => {
                   >
                     <div className="flex flex-col items-center">
                       <div className="p-2 bg-white rounded-full mb-2">
-                        {/* Use whatever icon is available for that category from lucide-react */}
                         <span className="text-primary">{category.name.charAt(0)}</span>
                       </div>
                       <span className="text-sm">{category.name}</span>

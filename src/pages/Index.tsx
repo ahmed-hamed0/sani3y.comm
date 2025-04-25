@@ -11,9 +11,9 @@ const Index = () => {
   return (
     <MainLayout>
       <Hero />
-      <HowItWorks />
-      <FeaturedCraftsmen />
       <FeaturedJobs />
+      <FeaturedCraftsmen />
+      <HowItWorks />
       <Testimonials />
       <CallToAction />
     </MainLayout>
