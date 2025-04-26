@@ -1,83 +1,141 @@
 
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
+import { signIn, LoginFormValues } from '@/lib/auth';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { loginSchema } from '@/lib/auth';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from "@/components/ui/form";
 
 const SignIn = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const form = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+      rememberMe: false
+    }
+  });
+
+  const onSubmit = async (values: LoginFormValues) => {
+    setIsLoading(true);
     
-    // Validate form fields
-    if (!email || !password) {
+    try {
+      const { success, error } = await signIn(values);
+      
+      if (!success && error) {
+        let errorMessage = error.message;
+        
+        // ترجمة رسائل الخطأ الشائعة
+        if (error.message.includes("Invalid login credentials")) {
+          errorMessage = "بيانات تسجيل الدخول غير صحيحة";
+        } else if (error.message.includes("Email not confirmed")) {
+          errorMessage = "لم يتم تأكيد البريد الإلكتروني بعد";
+        }
+        
+        toast({
+          title: "خطأ في تسجيل الدخول",
+          description: errorMessage,
+          variant: "destructive"
+        });
+        return;
+      }
+      
       toast({
-        title: "خطأ في البيانات",
-        description: "يرجى إدخال البريد الإلكتروني وكلمة المرور",
+        title: "تم تسجيل الدخول بنجاح",
+        description: "مرحباً بعودتك إلى صنايعي.كوم",
+      });
+      
+      // انتقل إلى الصفحة الرئيسية بعد تسجيل الدخول
+      navigate('/');
+    } catch (error) {
+      toast({
+        title: "خطأ في النظام",
+        description: "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى",
         variant: "destructive"
       });
-      return;
+    } finally {
+      setIsLoading(false);
     }
-
-    // Process login (mock for now)
-    toast({
-      title: "تم تسجيل الدخول بنجاح",
-      description: "مرحباً بعودتك إلى صنايعي.كوم",
-    });
   };
 
   return (
     <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
       <h1 className="text-2xl font-bold mb-6 text-center">تسجيل الدخول</h1>
       
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <Label htmlFor="email">البريد الإلكتروني</Label>
-          <Input 
-            id="email" 
-            type="email" 
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required 
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <Label htmlFor="email">البريد الإلكتروني</Label>
+                <FormControl>
+                  <Input id="email" type="email" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
           />
-        </div>
-        
-        <div>
-          <div className="flex justify-between items-center">
-            <Label htmlFor="password">كلمة المرور</Label>
-            <Link to="/forgot-password" className="text-sm text-primary hover:underline">
-              نسيت كلمة المرور؟
-            </Link>
-          </div>
-          <Input 
-            id="password" 
-            type="password" 
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required 
+          
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <div className="flex justify-between items-center">
+                  <Label htmlFor="password">كلمة المرور</Label>
+                  <Link to="/forgot-password" className="text-sm text-primary hover:underline">
+                    نسيت كلمة المرور؟
+                  </Link>
+                </div>
+                <FormControl>
+                  <Input id="password" type="password" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
           />
-        </div>
-        
-        <div className="flex items-center space-x-2 space-x-reverse">
-          <Checkbox 
-            id="remember" 
-            checked={rememberMe}
-            onCheckedChange={(checked) => setRememberMe(!!checked)}
+          
+          <FormField
+            control={form.control}
+            name="rememberMe"
+            render={({ field }) => (
+              <FormItem className="flex items-center space-x-2 space-x-reverse">
+                <FormControl>
+                  <Checkbox 
+                    id="remember" 
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+                <Label htmlFor="remember">تذكرني</Label>
+                <FormMessage />
+              </FormItem>
+            )}
           />
-          <Label htmlFor="remember">تذكرني</Label>
-        </div>
-        
-        <Button type="submit" className="w-full">
-          تسجيل الدخول
-        </Button>
-      </form>
+          
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? "جاري التسجيل..." : "تسجيل الدخول"}
+          </Button>
+        </form>
+      </Form>
       
       <div className="mt-6 text-center">
         <p>

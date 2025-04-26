@@ -9,6 +9,86 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      craftsman_details: {
+        Row: {
+          bio: string | null
+          completed_jobs: number | null
+          experience_years: number | null
+          gallery: string[] | null
+          id: string
+          is_available: boolean | null
+          skills: string[] | null
+          specialty: string
+        }
+        Insert: {
+          bio?: string | null
+          completed_jobs?: number | null
+          experience_years?: number | null
+          gallery?: string[] | null
+          id: string
+          is_available?: boolean | null
+          skills?: string[] | null
+          specialty: string
+        }
+        Update: {
+          bio?: string | null
+          completed_jobs?: number | null
+          experience_years?: number | null
+          gallery?: string[] | null
+          id?: string
+          is_available?: boolean | null
+          skills?: string[] | null
+          specialty?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "craftsman_details_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          city: string
+          created_at: string
+          full_name: string
+          governorate: string
+          id: string
+          phone: string
+          rating: number | null
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          city: string
+          created_at?: string
+          full_name: string
+          governorate: string
+          id: string
+          phone: string
+          rating?: number | null
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          city?: string
+          created_at?: string
+          full_name?: string
+          governorate?: string
+          id?: string
+          phone?: string
+          rating?: number | null
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           created_at: string
@@ -32,7 +112,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      user_role: "client" | "craftsman"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -147,6 +227,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      user_role: ["client", "craftsman"],
+    },
   },
 } as const

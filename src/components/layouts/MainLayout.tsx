@@ -1,8 +1,11 @@
 
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { Menu, User, Plus, Bell, Search, X } from 'lucide-react';
+import { Menu, User, Plus, Bell, Search, X, LogOut } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { useAuth } from '@/hooks/useAuth';
+import { signOut } from '@/lib/auth';
+import { useToast } from '@/hooks/use-toast';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -10,10 +13,30 @@ interface MainLayoutProps {
 
 const MainLayout = ({ children }: MainLayoutProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // This would be replaced with actual auth state
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const handleSignOut = async () => {
+    const { success, error } = await signOut();
+    
+    if (success) {
+      toast({
+        title: "تم تسجيل الخروج",
+        description: "نتمنى أن نراك مرة أخرى قريبًا"
+      });
+      navigate('/');
+    } else if (error) {
+      toast({
+        title: "خطأ في تسجيل الخروج",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -38,7 +61,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
 
             {/* User Actions */}
             <div className="hidden md:flex items-center space-x-4 space-x-reverse">
-              {isLoggedIn ? (
+              {user ? (
                 <>
                   <Button variant="outline" size="icon" className="rounded-full">
                     <Bell size={20} />
@@ -56,6 +79,15 @@ const MainLayout = ({ children }: MainLayoutProps) => {
                     <Link to="/profile">
                       <User size={20} />
                     </Link>
+                  </Button>
+
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={handleSignOut}
+                    className="text-gray-700 hover:text-red-500"
+                  >
+                    <LogOut size={20} />
                   </Button>
                 </>
               ) : (
@@ -90,7 +122,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
                 <Link to="/about" className="text-gray-700 hover:text-primary transition text-right px-4">عن المنصة</Link>
                 
                 <div className="border-t pt-4 mt-2 px-4">
-                  {isLoggedIn ? (
+                  {user ? (
                     <div className="flex flex-col space-y-3">
                       <Button asChild>
                         <Link to="/post-job" className="flex items-center gap-1 justify-center">
@@ -100,6 +132,14 @@ const MainLayout = ({ children }: MainLayoutProps) => {
                       </Button>
                       <Button variant="outline" asChild>
                         <Link to="/profile">حسابي الشخصي</Link>
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={handleSignOut}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <LogOut size={18} className="ml-2" />
+                        <span>تسجيل الخروج</span>
                       </Button>
                     </div>
                   ) : (
