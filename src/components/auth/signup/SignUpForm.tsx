@@ -64,6 +64,9 @@ const SignUpForm = () => {
     setIsLoading(true);
     
     try {
+      // إضافة تأخير 1 ثانية لتجنب قيود الأمان
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       const { success, error } = await signUp(values);
       
       if (!success && error) {
@@ -83,10 +86,11 @@ const SignUpForm = () => {
       
       toast({
         title: "تم إنشاء الحساب بنجاح",
-        description: "مرحباً بك في صنايعي.كوم",
+        description: "يمكنك الآن تسجيل الدخول",
       });
       
-      navigate('/');
+      // التوجيه إلى صفحة تسجيل الدخول
+      navigate('/sign-in');
     } catch (error) {
       toast({
         title: "خطأ في النظام",

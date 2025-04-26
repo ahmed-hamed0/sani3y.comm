@@ -14,6 +14,7 @@ import PostJob from "./pages/PostJob";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import About from "./pages/About";
+import Profile from "./pages/Profile";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,11 @@ const App = () => (
             <Route path="/post-job" element={
               <RequireAuth>
                 <PostJob />
+              </RequireAuth>
+            } />
+            <Route path="/profile" element={
+              <RequireAuth>
+                <Profile />
               </RequireAuth>
             } />
             <Route path="/sign-in" element={<SignIn />} />
