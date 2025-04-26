@@ -11,6 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
 import { RegisterFormValues } from "@/lib/auth";
+import { Spinner } from "@/components/ui/spinner";
 
 interface LocationStepProps {
   form: UseFormReturn<RegisterFormValues>;
@@ -98,7 +99,13 @@ const LocationStep = ({
           </Button>
         ) : (
           <Button type="submit" disabled={isLoading}>
-            {isLoading ? "جارِ التسجيل..." : "إنشاء الحساب"}
+            {isLoading ? (
+              <>
+                <Spinner size="sm" className="mr-2" /> جارٍ التسجيل...
+              </>
+            ) : (
+              "إنشاء الحساب"
+            )}
           </Button>
         )}
       </div>

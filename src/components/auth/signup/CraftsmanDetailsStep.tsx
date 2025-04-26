@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { UseFormReturn } from "react-hook-form";
 import { RegisterFormValues } from "@/lib/auth";
+import { Spinner } from "@/components/ui/spinner";
 
 interface CraftsmanDetailsStepProps {
   form: UseFormReturn<RegisterFormValues>;
@@ -70,7 +71,13 @@ const CraftsmanDetailsStep = ({
           رجوع
         </Button>
         <Button type="submit" disabled={isLoading}>
-          {isLoading ? "جارِ التسجيل..." : "إنشاء الحساب"}
+          {isLoading ? (
+            <>
+              <Spinner size="sm" className="mr-2" /> جارٍ التسجيل...
+            </>
+          ) : (
+            "إنشاء الحساب"
+          )}
         </Button>
       </div>
     </div>

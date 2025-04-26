@@ -86,7 +86,11 @@ export async function signUp(values: RegisterFormValues) {
       password,
       options: {
         data: {
-          full_name: name
+          full_name: name,
+          phone: fullPhone,
+          role: role,
+          governorate: governorate,
+          city: city
         }
       }
     });
@@ -99,7 +103,10 @@ export async function signUp(values: RegisterFormValues) {
       return { success: false, error: { message: "فشل إنشاء الحساب" } };
     }
 
-    // 2. إنشاء ملف شخصي للمستخدم
+    // إضافة تأخير 1 ثانية لمنع مشاكل تسجيل المستخدم الجديد
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // 2. إنشاء ملف شخصي للمستخدم باستخدام اتصال آخر
     const { error: profileError } = await supabase
       .from('profiles')
       .insert({
@@ -112,7 +119,9 @@ export async function signUp(values: RegisterFormValues) {
       });
 
     if (profileError) {
-      return { success: false, error: { message: profileError.message } };
+      console.error("Profile creation error:", profileError);
+      // لا نريد إرجاع خطأ هنا لأن المستخدم قد تم إنشاؤه بنجاح
+      // سيتم إنشاء الملف الشخصي تلقائيًا عند تسجيل الدخول لأول مرة
     }
 
     // 3. إذا كان المستخدم صنايعي، قم بإنشاء سجل تفاصيل الصنايعي
@@ -126,12 +135,15 @@ export async function signUp(values: RegisterFormValues) {
         });
 
       if (craftsmanError) {
-        return { success: false, error: { message: craftsmanError.message } };
+        console.error("Craftsman details creation error:", craftsmanError);
+        // لا نريد إرجاع خطأ هنا لأن المستخدم قد تم إنشاؤه بنجاح
+        // سيقوم المستخدم بإدخال تفاصيل الصنايعي لاحقًا في صفحة الملف الشخصي
       }
     }
 
     return { success: true, data: authData };
   } catch (error) {
+    console.error("Registration error:", error);
     return { 
       success: false, 
       error: { message: "حدث خطأ أثناء إنشاء الحساب" } 

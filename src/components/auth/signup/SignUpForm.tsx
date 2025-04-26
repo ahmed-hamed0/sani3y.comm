@@ -9,6 +9,7 @@ import { RegisterFormValues, registerSchema, signUp } from '@/lib/auth';
 import BasicInfoStep from './BasicInfoStep';
 import LocationStep from './LocationStep';
 import CraftsmanDetailsStep from './CraftsmanDetailsStep';
+import { Spinner } from '@/components/ui/spinner';
 
 const SignUpForm = () => {
   const [step, setStep] = useState<number>(1);
@@ -89,7 +90,7 @@ const SignUpForm = () => {
         description: "يمكنك الآن تسجيل الدخول",
       });
       
-      // التوجيه إلى صفحة تسجيل الدخول
+      // التوجيه إلى صفحة تسجيل الدخول بعد نجاح التسجيل
       navigate('/sign-in');
     } catch (error) {
       toast({
@@ -101,6 +102,15 @@ const SignUpForm = () => {
       setIsLoading(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center p-10">
+        <Spinner size="lg" />
+        <p className="mt-4 text-center text-muted-foreground">جاري إنشاء الحساب...</p>
+      </div>
+    );
+  }
 
   return (
     <Form {...form}>
