@@ -49,6 +49,16 @@ const SignUpForm = () => {
   const handlePrevStep = () => {
     setStep(1);
   };
+  
+  const goToCraftsmanDetails = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const step2Fields = ['governorate', 'city', 'agreeTerms'];
+    const step2Result = await form.trigger(step2Fields as any);
+    
+    if (step2Result) {
+      setStep(3);
+    }
+  };
 
   const onSubmit = async (values: RegisterFormValues) => {
     setIsLoading(true);
@@ -96,10 +106,17 @@ const SignUpForm = () => {
             form={form}
             onNextStep={handleNextStep}
           />
-        ) : (
+        ) : step === 2 ? (
           <LocationStep
             form={form}
             role={role}
+            isLoading={isLoading}
+            onPrevStep={handlePrevStep}
+            onNextStep={role === 'craftsman' ? goToCraftsmanDetails : undefined}
+          />
+        ) : (
+          <CraftsmanDetailsStep
+            form={form}
             isLoading={isLoading}
             onPrevStep={handlePrevStep}
           />
