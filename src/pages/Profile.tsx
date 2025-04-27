@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layouts/MainLayout';
@@ -32,12 +31,15 @@ const Profile = () => {
       }
       
       try {
+        console.log("Fetching profile for user:", user.id);
         setError(null);
         const { success, data, error: profileError } = await getUserProfile(user.id);
         
         if (success && data) {
+          console.log("Profile loaded successfully:", data);
           setProfile(data);
         } else if (profileError) {
+          console.error("Error loading profile:", profileError);
           setError(profileError.message);
           toast({
             title: "خطأ في تحميل الملف الشخصي",
@@ -98,6 +100,18 @@ const Profile = () => {
     }
   };
 
+  const refreshProfile = async () => {
+    if (!user) return;
+    
+    setIsLoading(true);
+    const { success, data } = await getUserProfile(user.id);
+    if (success && data) {
+      setProfile(data);
+      setError(null);
+    }
+    setIsLoading(false);
+  };
+
   if (isLoading) {
     return (
       <MainLayout>
@@ -122,6 +136,9 @@ const Profile = () => {
           
           <div className="flex justify-center mt-6">
             <Button onClick={() => navigate('/')}>العودة إلى الصفحة الرئيسية</Button>
+            <Button variant="outline" onClick={refreshProfile} className="mr-4">
+              إعادة المحاولة
+            </Button>
           </div>
         </div>
       </MainLayout>
@@ -140,6 +157,9 @@ const Profile = () => {
           
           <div className="flex justify-center mt-6">
             <Button onClick={() => navigate('/')}>العودة إلى الصفحة الرئيسية</Button>
+            <Button variant="outline" onClick={refreshProfile} className="mr-4">
+              إعادة المحاولة
+            </Button>
           </div>
         </div>
       </MainLayout>

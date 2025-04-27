@@ -11,6 +11,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema } from '@/lib/auth';
 import { Spinner } from '@/components/ui/spinner';
+import { getUserProfile } from '@/lib/profile';
 import {
   Form,
   FormControl,
@@ -38,7 +39,8 @@ const SignIn = () => {
     setIsLoading(true);
     
     try {
-      const { success, error } = await signIn(values);
+      console.log("Attempting to sign in user:", values.email);
+      const { success, error, data } = await signIn(values);
       
       if (!success && error) {
         let errorMessage = error.message;
@@ -68,14 +70,32 @@ const SignIn = () => {
       // تعيين حالة التوجيه إلى true عندما نبدأ في التوجيه
       setIsRedirecting(true);
       
-      // توجيه المستخدم إلى صفحة الملف الشخصي بعد تسجيل الدخول بتأخير قليل
-      // لضمان تحميل البيانات بشكل صحيح وتحديث حالة المصادقة
-      setTimeout(() => {
-        navigate('/profile');
+      // التأكد من وجود ملف شخصي للمستخدم بعد تسجيل الدخول
+      if (data?.user) {
+        console.log("Checking if user has a profile:", data.user.id);
+        const userId = data.user.id;
+        
+        // توجيه المستخدم إلى صفحة الملف الشخصي بعد تسجيل الدخول بتأخير قليل
+        // لضمان تحميل البيانات بشكل صحيح وتحديث حالة المصادقة
+        setTimeout(async () => {
+          try {
+            const { success, data: profileData } = await getUserProfile(userId);
+            console.log("Profile check result:", success, profileData);
+          } catch (error) {
+            console.error("Error checking user profile:", error);
+          }
+          
+          navigate('/profile');
+          setIsLoading(false);
+          setIsRedirecting(false);
+        }, 2000); // زيادة التأخير للتأكد من تحميل بيانات المستخدم
+      } else {
         setIsLoading(false);
         setIsRedirecting(false);
-      }, 1500); // زيادة التأخير للتأكد من تحميل بيانات المستخدم
+        navigate('/profile');
+      }
     } catch (error) {
+      console.error("Error in sign in process:", error);
       toast({
         title: "خطأ في النظام",
         description: "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى",

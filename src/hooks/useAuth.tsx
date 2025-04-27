@@ -3,10 +3,10 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { getCurrentUser } from '@/lib/auth';
+import { getUserProfile, createUserProfile } from '@/lib/profile';
 import { UserRole } from '@/types';
 
-// Modify UserData type to properly extend SupabaseUser
+// تعديل نوع UserData ليمتد بشكل صحيح من SupabaseUser
 type UserData = SupabaseUser & {
   role?: UserRole | null;
 };
@@ -38,26 +38,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // تحقق من وجود جلسة حالية أولاً
     const checkCurrentUser = async () => {
       try {
+        console.log('Checking current user...');
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session?.user && mounted) {
+          console.log('Session found, user:', session.user.email);
           const userData = session.user as UserData;
           userData.role = null;
           setUser(userData);
           
-          // استعلام عن دور المستخدم
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', userData.id)
-            .single();
+          // استعلام عن دور المستخدم والتأكد من وجود ملف شخصي
+          const { success, data, error: profileError } = await getUserProfile(userData.id);
           
-          if (data && mounted) {
+          if (success && data && mounted) {
+            console.log('Profile found:', data);
             const userRole = data.role as UserRole;
             setRole(userRole);
             userData.role = userRole;
             setUser({ ...userData });
+          } else {
+            console.log('No profile found or error:', profileError);
           }
+        } else {
+          console.log('No active session found');
         }
         
         if (mounted) setLoading(false);
@@ -72,6 +75,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       async (event, session) => {
         if (!mounted) return;
         
+        console.log('Auth state changed:', event, 'Session:', session?.user?.email);
+        
         if (session?.user) {
           const userData = session.user as UserData;
           userData.role = null;
@@ -82,17 +87,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             if (!mounted) return;
             
             try {
-              const { data, error } = await supabase
-                .from('profiles')
-                .select('role')
-                .eq('id', userData.id)
-                .single();
+              console.log('Fetching user profile for', userData.id);
+              const { success, data, error } = await getUserProfile(userData.id);
                 
-              if (data && mounted) {
+              if (success && data && mounted) {
+                console.log('Profile loaded in onAuthStateChange:', data);
                 const userRole = data.role as UserRole;
                 setRole(userRole);
                 userData.role = userRole;
                 setUser({ ...userData });
+              } else {
+                console.error('Error loading profile:', error);
               }
               
               if (mounted) setLoading(false);
@@ -100,7 +105,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               console.error('Error fetching user role:', error);
               if (mounted) setLoading(false);
             }
-          }, 10);
+          }, 100); // تأخير أكبر للتأكد من اكتمال عملية التسجيل
         } else {
           if (mounted) {
             setUser(null);

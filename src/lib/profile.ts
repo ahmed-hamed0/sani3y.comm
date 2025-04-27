@@ -9,7 +9,7 @@ export async function getUserProfile(userId: string) {
       .from('profiles')
       .select('*')
       .eq('id', userId)
-      .maybeSingle();  // Use maybeSingle instead of single to prevent the error
+      .maybeSingle();  // استخدام maybeSingle بدلاً من single لتجنب الأخطاء
     
     if (error) {
       console.error("Error fetching profile:", error);
@@ -18,6 +18,7 @@ export async function getUserProfile(userId: string) {
     
     // إذا لم يكن هناك ملف شخصي، قم بإنشاء ملف شخصي جديد
     if (!profile) {
+      console.log("No profile found, creating a new one for user:", userId);
       const { data: userData } = await supabase.auth.getUser();
       
       if (userData && userData.user) {
@@ -34,12 +35,14 @@ export async function getUserProfile(userId: string) {
         });
         
         if (createError) {
+          console.error("Error creating new profile:", createError);
           return { 
             success: false, 
             error: { message: "فشل في إنشاء ملف شخصي جديد" } 
           };
         }
         
+        console.log("New profile created successfully:", newProfile);
         return { success: true, data: newProfile };
       }
       
@@ -55,7 +58,7 @@ export async function getUserProfile(userId: string) {
         .from('craftsman_details')
         .select('*')
         .eq('id', userId)
-        .maybeSingle();  // Use maybeSingle here too
+        .maybeSingle();  // استخدام maybeSingle هنا أيضًا
       
       if (!detailsError && craftsmanDetails) {
         return { 
@@ -75,7 +78,7 @@ export async function getUserProfile(userId: string) {
   }
 }
 
-// وظيفة جديدة: إنشاء ملف شخصي
+// وظيفة إنشاء ملف شخصي
 export async function createUserProfile(profileData: {
   id: string;
   full_name: string;
@@ -86,6 +89,7 @@ export async function createUserProfile(profileData: {
   avatar_url?: string;
 }) {
   try {
+    console.log("Creating new user profile with data:", profileData);
     const { error } = await supabase
       .from('profiles')
       .insert([profileData]);
