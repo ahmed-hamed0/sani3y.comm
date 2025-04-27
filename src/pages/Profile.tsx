@@ -132,7 +132,7 @@ const Profile = () => {
     return (
       <MainLayout>
         <div className="container-custom py-12">
-          <Alert variant="warning" className="mb-6 bg-yellow-50 border-yellow-200 text-yellow-800">
+          <Alert variant="default" className="mb-6 bg-yellow-50 border-yellow-200 text-yellow-800">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>الملف الشخصي غير موجود</AlertTitle>
             <AlertDescription>لم يتم العثور على بيانات الملف الشخصي الخاص بك</AlertDescription>
