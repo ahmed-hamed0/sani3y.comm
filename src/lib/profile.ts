@@ -12,10 +12,37 @@ export async function getUserProfile(userId: string) {
       .maybeSingle();  // Use maybeSingle instead of single to prevent the error
     
     if (error) {
+      console.error("Error fetching profile:", error);
       return { success: false, error: { message: error.message } };
     }
     
+    // إذا لم يكن هناك ملف شخصي، قم بإنشاء ملف شخصي جديد
     if (!profile) {
+      const { data: userData } = await supabase.auth.getUser();
+      
+      if (userData && userData.user) {
+        // إنشاء ملف شخصي افتراضي
+        const defaultRole: UserRole = 'client'; // الدور الافتراضي هو عميل
+        
+        const { data: newProfile, error: createError } = await createUserProfile({
+          id: userId,
+          full_name: userData.user.email?.split('@')[0] || 'مستخدم جديد',
+          role: defaultRole,
+          phone: '',
+          governorate: '',
+          city: '',
+        });
+        
+        if (createError) {
+          return { 
+            success: false, 
+            error: { message: "فشل في إنشاء ملف شخصي جديد" } 
+          };
+        }
+        
+        return { success: true, data: newProfile };
+      }
+      
       return { 
         success: false, 
         error: { message: "لم يتم العثور على الملف الشخصي" } 
@@ -40,9 +67,61 @@ export async function getUserProfile(userId: string) {
 
     return { success: true, data: profile };
   } catch (error) {
+    console.error("Error in getUserProfile:", error);
     return { 
       success: false, 
       error: { message: "فشل في الحصول على الملف الشخصي" } 
+    };
+  }
+}
+
+// وظيفة جديدة: إنشاء ملف شخصي
+export async function createUserProfile(profileData: {
+  id: string;
+  full_name: string;
+  role: UserRole;
+  phone: string;
+  governorate: string;
+  city: string;
+  avatar_url?: string;
+}) {
+  try {
+    const { error } = await supabase
+      .from('profiles')
+      .insert([profileData]);
+    
+    if (error) {
+      console.error("Error creating profile:", error);
+      return { success: false, error: { message: error.message } };
+    }
+
+    // إنشاء تفاصيل الصنايعي إذا كان الدور هو صنايعي
+    if (profileData.role === 'craftsman') {
+      const { error: craftsmanError } = await supabase
+        .from('craftsman_details')
+        .insert([{
+          id: profileData.id,
+          specialty: 'عام', // تخصص افتراضي
+          bio: '',
+          skills: [],
+          is_available: true
+        }]);
+      
+      if (craftsmanError) {
+        console.error("Error creating craftsman details:", craftsmanError);
+        // لا نريد أن نفشل العملية بالكامل إذا فشل إنشاء تفاصيل الصنايعي
+      }
+    }
+
+    return { 
+      success: true, 
+      data: profileData 
+    };
+  } catch (error) {
+    console.error("Error in createUserProfile:", error);
+    return { 
+      success: false, 
+      error: { message: "فشل في إنشاء الملف الشخصي" } 
     };
   }
 }
