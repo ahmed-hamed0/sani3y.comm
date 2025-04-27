@@ -9,10 +9,17 @@ export async function getUserProfile(userId: string) {
       .from('profiles')
       .select('*')
       .eq('id', userId)
-      .single();
+      .maybeSingle();  // Use maybeSingle instead of single to prevent the error
     
     if (error) {
       return { success: false, error: { message: error.message } };
+    }
+    
+    if (!profile) {
+      return { 
+        success: false, 
+        error: { message: "لم يتم العثور على الملف الشخصي" } 
+      };
     }
 
     // إذا كان الملف الشخصي لصنايعي، احصل على تفاصيل إضافية
@@ -21,7 +28,7 @@ export async function getUserProfile(userId: string) {
         .from('craftsman_details')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();  // Use maybeSingle here too
       
       if (!detailsError && craftsmanDetails) {
         return { 

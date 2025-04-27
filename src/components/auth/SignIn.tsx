@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ import { signIn, LoginFormValues } from '@/lib/auth';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema } from '@/lib/auth';
+import { Spinner } from '@/components/ui/spinner';
 import {
   Form,
   FormControl,
@@ -19,6 +21,7 @@ import {
 
 const SignIn = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false); // New state for tracking redirection
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -62,12 +65,16 @@ const SignIn = () => {
         description: "مرحباً بعودتك إلى صنايعي.كوم",
       });
       
+      // تعيين حالة التوجيه إلى true عندما نبدأ في التوجيه
+      setIsRedirecting(true);
+      
       // توجيه المستخدم إلى صفحة الملف الشخصي بعد تسجيل الدخول بتأخير قليل
-      // لضمان تحميل البيانات بشكل صحيح
+      // لضمان تحميل البيانات بشكل صحيح وتحديث حالة المصادقة
       setTimeout(() => {
         navigate('/profile');
         setIsLoading(false);
-      }, 500);
+        setIsRedirecting(false);
+      }, 1500); // زيادة التأخير للتأكد من تحميل بيانات المستخدم
     } catch (error) {
       toast({
         title: "خطأ في النظام",
@@ -91,7 +98,7 @@ const SignIn = () => {
               <FormItem>
                 <Label htmlFor="email">البريد الإلكتروني</Label>
                 <FormControl>
-                  <Input id="email" type="email" {...field} />
+                  <Input id="email" type="email" disabled={isLoading} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -110,7 +117,7 @@ const SignIn = () => {
                   </Link>
                 </div>
                 <FormControl>
-                  <Input id="password" type="password" {...field} />
+                  <Input id="password" type="password" disabled={isLoading} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -127,6 +134,7 @@ const SignIn = () => {
                     id="remember" 
                     checked={field.value}
                     onCheckedChange={field.onChange}
+                    disabled={isLoading}
                   />
                 </FormControl>
                 <Label htmlFor="remember">تذكرني</Label>
@@ -135,8 +143,15 @@ const SignIn = () => {
             )}
           />
           
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "جاري تسجيل الدخول..." : "تسجيل الدخول"}
+          <Button type="submit" className="w-full" disabled={isLoading || isRedirecting}>
+            {isLoading ? (
+              <>
+                <Spinner size="sm" className="ml-2" />
+                {isRedirecting ? "جاري التوجيه..." : "جاري تسجيل الدخول..."}
+              </>
+            ) : (
+              "تسجيل الدخول"
+            )}
           </Button>
         </form>
       </Form>
