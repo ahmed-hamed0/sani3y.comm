@@ -33,85 +33,89 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [role, setRole] = useState<UserRole | null>(null);
   
   useEffect(() => {
+    let mounted = true;
+    
+    // تحقق من وجود جلسة حالية أولاً
+    const checkCurrentUser = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user && mounted) {
+          const userData = session.user as UserData;
+          userData.role = null;
+          setUser(userData);
+          
+          // استعلام عن دور المستخدم
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', userData.id)
+            .single();
+          
+          if (data && mounted) {
+            const userRole = data.role as UserRole;
+            setRole(userRole);
+            userData.role = userRole;
+            setUser({ ...userData });
+          }
+        }
+        
+        if (mounted) setLoading(false);
+      } catch (error) {
+        console.error('Error checking current user:', error);
+        if (mounted) setLoading(false);
+      }
+    };
+    
     // تعيين مستمع لتغييرات حالة المصادقة
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        const currentUser = session?.user ?? null;
+        if (!mounted) return;
         
-        if (currentUser) {
-          // Create a UserData object that satisfies the type
-          const userData = currentUser as UserData;
-          userData.role = null; // Initialize with null, will be updated if profile exists
+        if (session?.user) {
+          const userData = session.user as UserData;
+          userData.role = null;
           setUser(userData);
           
-          // إذا كان هناك مستخدم حالي، استعلم عن دوره
-          const { data } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', currentUser.id)
-            .single();
+          // تأخير قليل قبل استعلام الملف الشخصي لتجنب مشاكل التزامن
+          setTimeout(async () => {
+            if (!mounted) return;
             
-          if (data) {
-            const userRole = data.role as UserRole;
-            setRole(userRole);
-            setUser(prevUser => {
-              if (prevUser) {
-                return {
-                  ...prevUser,
-                  role: userRole
-                };
+            try {
+              const { data, error } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', userData.id)
+                .single();
+                
+              if (data && mounted) {
+                const userRole = data.role as UserRole;
+                setRole(userRole);
+                userData.role = userRole;
+                setUser({ ...userData });
               }
-              return null;
-            });
-          }
+              
+              if (mounted) setLoading(false);
+            } catch (error) {
+              console.error('Error fetching user role:', error);
+              if (mounted) setLoading(false);
+            }
+          }, 10);
         } else {
-          setUser(null);
-          setRole(null);
+          if (mounted) {
+            setUser(null);
+            setRole(null);
+            setLoading(false);
+          }
         }
-        
-        setLoading(false);
       }
     );
-
-    // التحقق من وجود جلسة حالية
-    const checkCurrentUser = async () => {
-      const { user: currentUser } = await getCurrentUser();
-      
-      if (currentUser) {
-        // Cast properly to UserData type
-        const userData = currentUser as UserData;
-        userData.role = null; // Initialize with null
-        setUser(userData);
-        
-        // استعلام عن دور المستخدم
-        const { data } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', currentUser.id)
-          .single();
-          
-        if (data) {
-          const userRole = data.role as UserRole;
-          setRole(userRole);
-          setUser(prevUser => {
-            if (prevUser) {
-              return {
-                ...prevUser,
-                role: userRole
-              };
-            }
-            return null;
-          });
-        }
-      }
-      
-      setLoading(false);
-    };
     
     checkCurrentUser();
-
+    
     // تنظيف المستمع عند إلغاء تحميل المكون
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, []);

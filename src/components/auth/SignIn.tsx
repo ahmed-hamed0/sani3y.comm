@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -53,6 +52,8 @@ const SignIn = () => {
           description: errorMessage,
           variant: "destructive"
         });
+        
+        setIsLoading(false);
         return;
       }
       
@@ -61,15 +62,18 @@ const SignIn = () => {
         description: "مرحباً بعودتك إلى صنايعي.كوم",
       });
       
-      // توجيه المستخدم إلى صفحة الملف الشخصي بعد تسجيل الدخول
-      navigate('/profile');
+      // توجيه المستخدم إلى صفحة الملف الشخصي بعد تسجيل الدخول بتأخير قليل
+      // لضمان تحميل البيانات بشكل صحيح
+      setTimeout(() => {
+        navigate('/profile');
+        setIsLoading(false);
+      }, 500);
     } catch (error) {
       toast({
         title: "خطأ في النظام",
         description: "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى",
         variant: "destructive"
       });
-    } finally {
       setIsLoading(false);
     }
   };
@@ -132,7 +136,7 @@ const SignIn = () => {
           />
           
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "جاري التسجيل..." : "تسجيل الدخول"}
+            {isLoading ? "جاري تسجيل الدخول..." : "تسجيل الدخول"}
           </Button>
         </form>
       </Form>
