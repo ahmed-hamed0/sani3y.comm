@@ -36,10 +36,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         const currentUser = session?.user ?? null;
-        setUser(currentUser);
         
-        // إذا كان هناك مستخدم حالي، استعلم عن دوره
+        // Update user with proper casting to UserData
         if (currentUser) {
+          // Create a UserData object with the currentUser properties
+          const userData: UserData = { ...currentUser };
+          setUser(userData);
+          
+          // إذا كان هناك مستخدم حالي، استعلم عن دوره
           const { data } = await supabase
             .from('profiles')
             .select('role')
@@ -47,13 +51,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             .single();
             
           if (data) {
-            setRole(data.role);
-            setUser(prevUser => ({
-              ...prevUser!,
-              role: data.role
-            }));
+            setRole(data.role as UserRole);
+            setUser(prevUser => prevUser ? {
+              ...prevUser,
+              role: data.role as UserRole
+            } : null);
           }
         } else {
+          setUser(null);
           setRole(null);
         }
         
@@ -63,24 +68,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     // التحقق من وجود جلسة حالية
     const checkCurrentUser = async () => {
-      const { user } = await getCurrentUser();
+      const { user: currentUser } = await getCurrentUser();
       
-      if (user) {
-        setUser(user);
+      if (currentUser) {
+        // Cast the user to UserData type
+        const userData: UserData = { ...currentUser };
+        setUser(userData);
         
         // استعلام عن دور المستخدم
         const { data } = await supabase
           .from('profiles')
           .select('role')
-          .eq('id', user.id)
+          .eq('id', currentUser.id)
           .single();
           
         if (data) {
-          setRole(data.role);
-          setUser(prevUser => ({
-            ...prevUser!,
-            role: data.role
-          }));
+          setRole(data.role as UserRole);
+          setUser(prevUser => prevUser ? {
+            ...prevUser,
+            role: data.role as UserRole
+          } : null);
         }
       }
       
