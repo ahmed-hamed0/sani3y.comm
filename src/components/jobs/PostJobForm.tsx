@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,12 +8,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CATEGORIES, GOVERNORATES } from '@/data/mockData';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { Spinner } from '@/components/ui/spinner';
+import { supabase } from '@/integrations/supabase/client';
 
 const PostJobForm = () => {
   const [searchParams] = useSearchParams();
   const preselectedCraftsman = searchParams.get('craftsman');
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { user, isClient } = useAuth();
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     category: '',
@@ -44,8 +50,17 @@ const PostJobForm = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!user || !isClient) {
+      toast({
+        title: "غير مصرح",
+        description: "يجب أن تكون عميل مسجل لنشر مهمة جديدة",
+        variant: "destructive"
+      });
+      return;
+    }
     
     // Validate form
     if (!formData.title || !formData.category || !formData.description || !formData.governorate || !formData.city) {
@@ -75,30 +90,61 @@ const PostJobForm = () => {
       });
       return;
     }
+
+    setIsSubmitting(true);
     
-    // Process form submission
-    toast({
-      title: "تم نشر المهمة بنجاح",
-      description: "سيتم إشعار الصنايعية المتخصصين بمهمتك الجديدة",
-    });
-    
-    // Reset form data
-    setFormData({
-      title: '',
-      category: '',
-      description: '',
-      governorate: '',
-      city: '',
-      address: '',
-      budgetMin: '',
-      budgetMax: '',
-    });
-    setSelectedGovernorate('');
+    try {
+      // إعداد بيانات المهمة
+      const jobData = {
+        title: formData.title,
+        category: formData.category,
+        description: formData.description,
+        location: {
+          governorate: formData.governorate,
+          city: formData.city,
+          address: formData.address || null,
+        },
+        budget: {
+          min: formData.budgetMin ? Number(formData.budgetMin) : null,
+          max: formData.budgetMax ? Number(formData.budgetMax) : null,
+        },
+        client_id: user.id,
+        status: 'open',
+        craftsman_id: preselectedCraftsman || null,
+      };
+      
+      // محاكاة عملية الحفظ - يمكن استبدالها بحفظ حقيقي في Supabase
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Process form submission
+      toast({
+        title: "تم نشر المهمة بنجاح",
+        description: "سيتم إشعار الصنايعية المتخصصين بمهمتك الجديدة",
+      });
+      
+      // إعادة التوجيه إلى صفحة المهام
+      navigate('/jobs');
+    } catch (error) {
+      console.error("Error posting job:", error);
+      toast({
+        title: "خطأ في النظام",
+        description: "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <h2 className="text-2xl font-bold mb-6">نشر مهمة جديدة</h2>
+      
+      {!isClient && (
+        <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-md mb-6">
+          <p className="text-yellow-800">فقط العملاء يمكنهم نشر مهام جديدة. إذا كنت صنايعي، يمكنك البحث عن المهام المتاحة والتقدم لها.</p>
+        </div>
+      )}
       
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
@@ -109,6 +155,7 @@ const PostJobForm = () => {
             placeholder="مثال: تصليح تسريب مياه في المطبخ"
             value={formData.title}
             onChange={handleChange}
+            disabled={isSubmitting || !isClient}
             required
           />
         </div>
@@ -118,6 +165,7 @@ const PostJobForm = () => {
           <Select
             value={formData.category}
             onValueChange={(value) => handleSelectChange('category', value)}
+            disabled={isSubmitting || !isClient}
           >
             <SelectTrigger>
               <SelectValue placeholder="اختر تصنيف المهمة" />
@@ -141,6 +189,7 @@ const PostJobForm = () => {
             placeholder="اشرح بالتفصيل المهمة المطلوبة وأي متطلبات خاصة..."
             value={formData.description}
             onChange={handleChange}
+            disabled={isSubmitting || !isClient}
             required
           />
         </div>
@@ -151,6 +200,7 @@ const PostJobForm = () => {
             <Select
               value={formData.governorate}
               onValueChange={(value) => handleSelectChange('governorate', value)}
+              disabled={isSubmitting || !isClient}
             >
               <SelectTrigger>
                 <SelectValue placeholder="اختر المحافظة" />
@@ -170,7 +220,7 @@ const PostJobForm = () => {
             <Select
               value={formData.city}
               onValueChange={(value) => handleSelectChange('city', value)}
-              disabled={!selectedGovernorate}
+              disabled={isSubmitting || !isClient || !selectedGovernorate}
             >
               <SelectTrigger>
                 <SelectValue placeholder={!selectedGovernorate ? "اختر المحافظة أولاً" : "اختر المدينة"} />
@@ -194,6 +244,7 @@ const PostJobForm = () => {
             placeholder="العنوان التفصيلي للموقع"
             value={formData.address}
             onChange={handleChange}
+            disabled={isSubmitting || !isClient}
           />
         </div>
         
@@ -209,6 +260,7 @@ const PostJobForm = () => {
                 placeholder="0"
                 value={formData.budgetMin}
                 onChange={handleChange}
+                disabled={isSubmitting || !isClient}
               />
             </div>
             <div>
@@ -220,6 +272,7 @@ const PostJobForm = () => {
                 placeholder="1000"
                 value={formData.budgetMax}
                 onChange={handleChange}
+                disabled={isSubmitting || !isClient}
               />
             </div>
           </div>
@@ -231,8 +284,14 @@ const PostJobForm = () => {
           </div>
         )}
         
-        <Button type="submit" className="w-full">
-          نشر المهمة
+        <Button type="submit" className="w-full" disabled={isSubmitting || !isClient}>
+          {isSubmitting ? (
+            <>
+              <Spinner size="sm" className="mr-2" /> جارِ النشر...
+            </>
+          ) : (
+            "نشر المهمة"
+          )}
         </Button>
       </form>
     </div>

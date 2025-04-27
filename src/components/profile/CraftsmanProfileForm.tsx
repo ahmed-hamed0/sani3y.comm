@@ -11,12 +11,16 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { updateCraftsmanDetails } from '@/lib/profile';
 import { useAuth } from '@/hooks/useAuth';
+import { X, Plus } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Spinner } from '@/components/ui/spinner';
 
 // تعريف مخطط التحقق للنموذج
 const craftsmanSchema = z.object({
   specialty: z.string().min(1, 'يرجى إدخال التخصص'),
   bio: z.string().optional(),
   is_available: z.boolean().default(true),
+  skills: z.array(z.string()).default([]),
 });
 
 type CraftsmanFormValues = z.infer<typeof craftsmanSchema>;
@@ -27,6 +31,7 @@ interface CraftsmanProfileFormProps {
 
 const CraftsmanProfileForm = ({ profile }: CraftsmanProfileFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [newSkill, setNewSkill] = useState('');
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -36,8 +41,27 @@ const CraftsmanProfileForm = ({ profile }: CraftsmanProfileFormProps) => {
       specialty: profile?.specialty || '',
       bio: profile?.bio || '',
       is_available: profile?.is_available !== false, // إذا كانت القيمة undefined تكون true
+      skills: profile?.skills || [],
     },
   });
+
+  const { setValue, watch } = form;
+  const currentSkills = watch('skills');
+
+  const addSkill = () => {
+    if (!newSkill.trim()) return;
+    
+    // تجنب تكرار المهارات
+    if (!currentSkills.includes(newSkill.trim())) {
+      setValue('skills', [...currentSkills, newSkill.trim()]);
+    }
+    
+    setNewSkill('');
+  };
+
+  const removeSkill = (skillToRemove: string) => {
+    setValue('skills', currentSkills.filter(skill => skill !== skillToRemove));
+  };
 
   const onSubmit = async (values: CraftsmanFormValues) => {
     if (!user) return;
@@ -67,6 +91,13 @@ const CraftsmanProfileForm = ({ profile }: CraftsmanProfileFormProps) => {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addSkill();
     }
   };
 
@@ -109,6 +140,49 @@ const CraftsmanProfileForm = ({ profile }: CraftsmanProfileFormProps) => {
             </FormItem>
           )}
         />
+        
+        <div>
+          <FormLabel>المهارات</FormLabel>
+          <div className="flex gap-2 mb-2">
+            <Input
+              value={newSkill}
+              onChange={(e) => setNewSkill(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="أضف مهارة جديدة"
+              disabled={isLoading}
+              className="flex-1"
+            />
+            <Button 
+              type="button" 
+              variant="outline" 
+              size="icon" 
+              onClick={addSkill}
+              disabled={isLoading || !newSkill.trim()}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          <div className="flex flex-wrap gap-2 mt-2">
+            {currentSkills.length > 0 ? (
+              currentSkills.map((skill, index) => (
+                <Badge key={index} variant="secondary" className="pl-3 pr-2 py-1.5">
+                  {skill}
+                  <button
+                    type="button"
+                    onClick={() => removeSkill(skill)}
+                    className="ml-1 hover:text-destructive focus:outline-none"
+                    disabled={isLoading}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground">أضف مهاراتك هنا</p>
+            )}
+          </div>
+        </div>
 
         <FormField
           control={form.control}
@@ -131,7 +205,13 @@ const CraftsmanProfileForm = ({ profile }: CraftsmanProfileFormProps) => {
         />
 
         <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? 'جارِ الحفظ...' : 'حفظ التغييرات'}
+          {isLoading ? (
+            <>
+              <Spinner size="sm" className="mr-2" /> جارِ الحفظ...
+            </>
+          ) : (
+            'حفظ التغييرات'
+          )}
         </Button>
       </form>
     </Form>

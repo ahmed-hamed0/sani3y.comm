@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider, RequireAuth } from "@/hooks/useAuth";
+import { AuthProvider, RequireAuth, RequireClient, RequireCraftsman } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Craftsmen from "./pages/Craftsmen";
@@ -30,11 +30,7 @@ const App = () => (
             <Route path="/craftsmen" element={<Craftsmen />} />
             <Route path="/craftsman/:id" element={<CraftsmanDetails />} />
             <Route path="/jobs" element={<Jobs />} />
-            <Route path="/post-job" element={
-              <RequireAuth>
-                <PostJob />
-              </RequireAuth>
-            } />
+            <Route path="/post-job" element={<PostJob />} />
             <Route path="/profile" element={
               <RequireAuth>
                 <Profile />

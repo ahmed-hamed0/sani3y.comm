@@ -4,35 +4,90 @@ import { User as SupabaseUser } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { getCurrentUser } from '@/lib/auth';
+import { UserRole } from '@/types';
+
+type UserData = SupabaseUser & {
+  role?: UserRole;
+};
 
 type AuthContextType = {
-  user: SupabaseUser | null;
+  user: UserData | null;
   loading: boolean;
+  role: UserRole | null;
+  isClient: boolean;
+  isCraftsman: boolean;
 };
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
-  loading: true
+  loading: true,
+  role: null,
+  isClient: false,
+  isCraftsman: false
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [role, setRole] = useState<UserRole | null>(null);
   
   useEffect(() => {
     // تعيين مستمع لتغييرات حالة المصادقة
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user ?? null);
+      async (event, session) => {
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
+        
+        // إذا كان هناك مستخدم حالي، استعلم عن دوره
+        if (currentUser) {
+          const { data } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', currentUser.id)
+            .single();
+            
+          if (data) {
+            setRole(data.role);
+            setUser(prevUser => ({
+              ...prevUser!,
+              role: data.role
+            }));
+          }
+        } else {
+          setRole(null);
+        }
+        
         setLoading(false);
       }
     );
 
     // التحقق من وجود جلسة حالية
-    getCurrentUser().then(({ user }) => {
-      setUser(user);
+    const checkCurrentUser = async () => {
+      const { user } = await getCurrentUser();
+      
+      if (user) {
+        setUser(user);
+        
+        // استعلام عن دور المستخدم
+        const { data } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+          
+        if (data) {
+          setRole(data.role);
+          setUser(prevUser => ({
+            ...prevUser!,
+            role: data.role
+          }));
+        }
+      }
+      
       setLoading(false);
-    });
+    };
+    
+    checkCurrentUser();
 
     // تنظيف المستمع عند إلغاء تحميل المكون
     return () => {
@@ -40,8 +95,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
+  // تحديد نوع المستخدم (عميل أو صنايعي)
+  const isClient = role === 'client';
+  const isCraftsman = role === 'craftsman';
+
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ user, loading, role, isClient, isCraftsman }}>
       {children}
     </AuthContext.Provider>
   );
@@ -64,4 +123,46 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
   }
 
   return user ? <>{children}</> : null;
+}
+
+export function RequireClient({ children }: { children: React.ReactNode }) {
+  const { user, loading, isClient } = useAuth();
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    if (!loading) {
+      if (!user) {
+        navigate('/sign-in', { replace: true });
+      } else if (!isClient) {
+        navigate('/', { replace: true });
+      }
+    }
+  }, [navigate, user, loading, isClient]);
+
+  if (loading) {
+    return <div className="flex justify-center items-center h-screen">جاري التحميل...</div>;
+  }
+
+  return (user && isClient) ? <>{children}</> : null;
+}
+
+export function RequireCraftsman({ children }: { children: React.ReactNode }) {
+  const { user, loading, isCraftsman } = useAuth();
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    if (!loading) {
+      if (!user) {
+        navigate('/sign-in', { replace: true });
+      } else if (!isCraftsman) {
+        navigate('/', { replace: true });
+      }
+    }
+  }, [navigate, user, loading, isCraftsman]);
+
+  if (loading) {
+    return <div className="flex justify-center items-center h-screen">جاري التحميل...</div>;
+  }
+
+  return (user && isCraftsman) ? <>{children}</> : null;
 }
