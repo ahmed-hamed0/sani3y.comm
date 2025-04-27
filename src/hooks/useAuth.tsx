@@ -6,8 +6,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { getCurrentUser } from '@/lib/auth';
 import { UserRole } from '@/types';
 
+// Modify UserData type to properly extend SupabaseUser
 type UserData = SupabaseUser & {
-  role?: UserRole;
+  role?: UserRole | null;
 };
 
 type AuthContextType = {
@@ -37,10 +38,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       async (event, session) => {
         const currentUser = session?.user ?? null;
         
-        // Update user with proper casting to UserData
         if (currentUser) {
-          // Create a UserData object with the currentUser properties
-          const userData: UserData = { ...currentUser };
+          // Create a UserData object that satisfies the type
+          const userData = currentUser as UserData;
+          userData.role = null; // Initialize with null, will be updated if profile exists
           setUser(userData);
           
           // إذا كان هناك مستخدم حالي، استعلم عن دوره
@@ -51,11 +52,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             .single();
             
           if (data) {
-            setRole(data.role as UserRole);
-            setUser(prevUser => prevUser ? {
-              ...prevUser,
-              role: data.role as UserRole
-            } : null);
+            const userRole = data.role as UserRole;
+            setRole(userRole);
+            setUser(prevUser => {
+              if (prevUser) {
+                return {
+                  ...prevUser,
+                  role: userRole
+                };
+              }
+              return null;
+            });
           }
         } else {
           setUser(null);
@@ -71,8 +78,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const { user: currentUser } = await getCurrentUser();
       
       if (currentUser) {
-        // Cast the user to UserData type
-        const userData: UserData = { ...currentUser };
+        // Cast properly to UserData type
+        const userData = currentUser as UserData;
+        userData.role = null; // Initialize with null
         setUser(userData);
         
         // استعلام عن دور المستخدم
@@ -83,11 +91,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           .single();
           
         if (data) {
-          setRole(data.role as UserRole);
-          setUser(prevUser => prevUser ? {
-            ...prevUser,
-            role: data.role as UserRole
-          } : null);
+          const userRole = data.role as UserRole;
+          setRole(userRole);
+          setUser(prevUser => {
+            if (prevUser) {
+              return {
+                ...prevUser,
+                role: userRole
+              };
+            }
+            return null;
+          });
         }
       }
       
