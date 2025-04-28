@@ -68,8 +68,7 @@ const Profile = () => {
           console.error("Error loading profile after multiple attempts:", profileError);
           setError(profileError.message || "لم يتم العثور على الملف الشخصي");
           
-          toast({
-            description: "خطأ في تحميل الملف الشخصي: " + (profileError.message || "لم يتم العثور على الملف الشخصي"),
+          toast("خطأ في تحميل الملف الشخصي: " + (profileError.message || "لم يتم العثور على الملف الشخصي"), {
             variant: "destructive"
           });
         }
@@ -90,8 +89,7 @@ const Profile = () => {
 
     const file = files[0];
     if (file.size > 5 * 1024 * 1024) {
-      toast({
-        description: "خطأ في تحميل الصورة: حجم الملف كبير جداً (الحد الأقصى 5 ميجابايت)",
+      toast("خطأ في تحميل الصورة: حجم الملف كبير جداً (الحد الأقصى 5 ميجابايت)", {
         variant: "destructive"
       });
       return;
@@ -102,19 +100,15 @@ const Profile = () => {
       const { success, url, error } = await uploadAvatar(user.id, file);
       if (success && url) {
         setProfile((prev: any) => ({ ...prev, avatar_url: url }));
-        toast({
-          description: "تم تحديث الصورة الشخصية بنجاح"
-        });
+        toast("تم تحديث الصورة الشخصية بنجاح");
       } else if (error) {
-        toast({
-          description: "خطأ في تحميل الصورة: " + error.message,
+        toast("خطأ في تحميل الصورة: " + error.message, {
           variant: "destructive"
         });
       }
     } catch (error) {
       console.error("Error uploading avatar:", error);
-      toast({
-        description: "خطأ في تحميل الصورة: حدث خطأ غير متوقع أثناء تحميل الصورة",
+      toast("خطأ في تحميل الصورة: حدث خطأ غير متوقع أثناء تحميل الصورة", {
         variant: "destructive"
       });
     } finally {
@@ -137,13 +131,10 @@ const Profile = () => {
       
       if (success && data) {
         setProfile(data);
-        toast({
-          description: "تم تحديث الملف الشخصي بنجاح"
-        });
+        toast("تم تحديث الملف الشخصي بنجاح");
       } else if (profileError) {
         setError(profileError.message || "لم يتم العثور على الملف الشخصي");
-        toast({
-          description: "خطأ في التحديث: " + (profileError.message || "لم يتم العثور على الملف الشخصي"),
+        toast("خطأ في التحديث: " + (profileError.message || "لم يتم العثور على الملف الشخصي"), {
           variant: "destructive"
         });
       }

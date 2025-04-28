@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -9,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { updateUserProfile } from '@/lib/profile';
 import { useAuth } from '@/hooks/useAuth';
+import { toast } from '@/components/ui/sonner';
 
 // تعريف مخطط التحقق للنموذج
 const profileSchema = z.object({
@@ -26,7 +26,7 @@ interface ProfileFormProps {
 
 const ProfileForm = ({ profile }: ProfileFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
+  const { toast: hookToast } = useToast();
   const { user } = useAuth();
 
   const form = useForm<ProfileFormValues>({
@@ -47,23 +47,16 @@ const ProfileForm = ({ profile }: ProfileFormProps) => {
       const { success, error } = await updateUserProfile(user.id, values);
       
       if (success) {
-        toast({
-          title: 'تم التحديث',
-          description: 'تم تحديث المعلومات الشخصية بنجاح',
-        });
+        toast("تم تحديث المعلومات الشخصية بنجاح");
       } else if (error) {
-        toast({
-          title: 'خطأ في التحديث',
-          description: error.message,
-          variant: 'destructive',
+        toast("خطأ في التحديث: " + error.message, {
+          variant: "destructive"
         });
       }
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast({
-        title: 'خطأ في النظام',
-        description: 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى',
-        variant: 'destructive',
+      toast("خطأ في النظام: حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى", {
+        variant: "destructive"
       });
     } finally {
       setIsLoading(false);

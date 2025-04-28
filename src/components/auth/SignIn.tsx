@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -54,8 +53,7 @@ const SignIn = () => {
           errorMessage = "لم يتم تأكيد البريد الإلكتروني بعد";
         }
         
-        toast({
-          description: "خطأ في تسجيل الدخول: " + errorMessage,
+        toast("خطأ في تسجيل الدخول: " + errorMessage, {
           variant: "destructive"
         });
         
@@ -63,9 +61,7 @@ const SignIn = () => {
         return;
       }
       
-      toast({
-        description: "تم تسجيل الدخول بنجاح. مرحباً بعودتك إلى صنايعي.كوم",
-      });
+      toast("تم تسجيل الدخول بنجاح. مرحباً بعودتك إلى صنايعي.كوم");
       
       // تعيين حالة التوجيه إلى true عندما نبدأ في التوجيه
       setIsRedirecting(true);
@@ -99,8 +95,7 @@ const SignIn = () => {
             if (!createSuccess || createError) {
               console.error("Error creating profile:", createError);
               // عرض رسالة خطأ ولكن مواصلة عملية تسجيل الدخول
-              toast({
-                description: "تم تسجيل الدخول ولكن قد تكون هناك مشكلة في إنشاء الملف الشخصي",
+              toast("تم تسجيل الدخول ولكن قد تكون هناك مشكلة في إنشاء الملف الشخصي", {
                 variant: "warning"
               });
             } else {
@@ -116,8 +111,7 @@ const SignIn = () => {
           
           if (!sessionCheck?.session) {
             console.error("Session lost after profile check!");
-            toast({
-              description: "خطأ في الجلسة: تم فقدان جلسة المستخدم، يرجى المحاولة مرة أخرى",
+            toast("خطأ في الجلسة: تم فقدان جلسة المستخدم، يرجى المحاولة مرة أخرى", {
               variant: "destructive"
             });
             setIsLoading(false);
@@ -139,8 +133,7 @@ const SignIn = () => {
             navigate('/profile');
           } else {
             console.error("No session found before redirect!");
-            toast({
-              description: "خطأ في الجلسة: تم فقدان جلسة المستخدم، يرجى المحاولة مرة أخرى",
+            toast("خطأ في الجلسة: تم فقدان جلسة المستخدم، يرجى المحاولة مرة أخرى", {
               variant: "destructive"
             });
           }
@@ -150,8 +143,7 @@ const SignIn = () => {
       }, 3000);
     } catch (error) {
       console.error("Error in sign in process:", error);
-      toast({
-        description: "خطأ في النظام: حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى",
+      toast("خطأ في النظام: حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى", {
         variant: "destructive"
       });
       setIsLoading(false);
