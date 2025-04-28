@@ -2,57 +2,26 @@
 import { useState, useEffect } from 'react';
 import MainLayout from '@/components/layouts/MainLayout';
 import { useAuth } from '@/hooks/useAuth';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { getUserProfile, uploadAvatar } from '@/lib/profile';
-import ProfileForm from '@/components/profile/ProfileForm';
-import CraftsmanProfileForm from '@/components/profile/CraftsmanProfileForm';
+import { getUserProfile } from '@/lib/profile';
 import { ProfileLoading } from '@/components/profile/ProfileLoading';
 import { ProfileError } from '@/components/profile/ProfileError';
 import { ProfileNotFound } from '@/components/profile/ProfileNotFound';
 import { ProfileHeader } from '@/components/profile/ProfileHeader';
+import { ProfileTabs } from '@/components/profile/ProfileTabs';
 import { toast } from '@/components/ui/sonner';
+import { useAvatarUpload } from '@/hooks/useAvatarUpload';
 
 const Profile = () => {
   const { user, refreshProfile } = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || files.length === 0 || !user) return;
-
-    const file = files[0];
-    if (file.size > 5 * 1024 * 1024) {
-      toast("حجم الملف كبير جداً (الحد الأقصى 5 ميجابايت)", {
-        style: { backgroundColor: 'rgb(220, 38, 38)', color: 'white' }
-      });
-      return;
-    }
-
-    setIsUploading(true);
-    try {
-      const { success, url, error } = await uploadAvatar(user.id, file);
-      if (success && url) {
-        setProfile((prev: any) => ({ ...prev, avatar_url: url }));
-        toast("تم تحديث الصورة الشخصية بنجاح");
-      } else if (error) {
-        toast("خطأ في تحميل الصورة: " + error.message, {
-          style: { backgroundColor: 'rgb(220, 38, 38)', color: 'white' }
-        });
-      }
-    } catch (error) {
-      console.error("Error uploading avatar:", error);
-      toast("خطأ في تحميل الصورة: حدث خطأ غير متوقع أثناء تحميل الصورة", {
-        style: { backgroundColor: 'rgb(220, 38, 38)', color: 'white' }
-      });
-    } finally {
-      setIsUploading(false);
-    }
-  };
+  const { isUploading, handleAvatarUpload } = useAvatarUpload(
+    user?.id, 
+    (url) => setProfile((prev: any) => ({ ...prev, avatar_url: url }))
+  );
 
   const refreshProfileData = async () => {
     if (!user) return;
@@ -185,38 +154,9 @@ const Profile = () => {
           </div>
 
           <div className="lg:col-span-3">
-            <Tabs defaultValue="personal">
-              <TabsList className="mb-6 w-full justify-start">
-                <TabsTrigger value="personal">المعلومات الشخصية</TabsTrigger>
-                {profile.role === 'craftsman' && (
-                  <TabsTrigger value="craftsman">معلومات الصنايعي</TabsTrigger>
-                )}
-              </TabsList>
-              
-              <TabsContent value="personal">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>المعلومات الشخصية</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ProfileForm profile={profile} />
-                  </CardContent>
-                </Card>
-              </TabsContent>
-              
-              {profile.role === 'craftsman' && (
-                <TabsContent value="craftsman">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>معلومات الصنايعي</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <CraftsmanProfileForm profile={profile} />
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              )}
-            </Tabs>
+            <ProfileTabs 
+              profile={profile}
+            />
           </div>
         </div>
       </div>
