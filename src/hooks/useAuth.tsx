@@ -58,9 +58,42 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setUser({ ...userData });
           } else {
             console.log('No profile found or error:', profileError);
+            
+            // محاولة إنشاء ملف شخصي إذا لم يكن موجوداً
+            try {
+              console.log('Creating profile for user:', userData.id);
+              const defaultRole: UserRole = 'client';
+              
+              // استخدام معلومات المستخدم من الحساب إن وجدت
+              const { data: userMetadata } = await supabase.auth.getUser();
+              const metadata = userMetadata?.user?.user_metadata || {};
+              
+              const { success: createSuccess, data: newProfile } = await createUserProfile({
+                id: userData.id,
+                full_name: metadata.full_name || userData.email?.split('@')[0] || 'مستخدم جديد',
+                role: defaultRole,
+                phone: metadata.phone || '',
+                governorate: metadata.governorate || '',
+                city: metadata.city || '',
+              });
+              
+              if (createSuccess && newProfile && mounted) {
+                console.log('New profile created successfully:', newProfile);
+                const userRole = newProfile.role as UserRole;
+                setRole(userRole);
+                userData.role = userRole;
+                setUser({ ...userData });
+              }
+            } catch (createError) {
+              console.error('Error creating profile:', createError);
+            }
           }
         } else {
           console.log('No active session found');
+          if (mounted) {
+            setUser(null);
+            setRole(null);
+          }
         }
         
         if (mounted) setLoading(false);
@@ -82,7 +115,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           userData.role = null;
           setUser(userData);
           
-          // تأخير قليل قبل استعلام الملف الشخصي لتجنب مشاكل التزامن
+          // تجنب تحميل الملف الشخصي مباشرة داخل مستمع المصادقة لمنع حلقات معالجة متكررة
+          // نستخدم setTimeout لتأخير الاستعلام عن الملف الشخصي خارج دورة معالجة الحدث الحالية
           setTimeout(async () => {
             if (!mounted) return;
             
@@ -97,7 +131,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 userData.role = userRole;
                 setUser({ ...userData });
               } else {
-                console.error('Error loading profile:', error);
+                console.error('Error or no profile found:', error);
+                
+                // محاولة إنشاء ملف شخصي إذا لم يكن موجوداً
+                try {
+                  console.log('Creating profile for user in auth state change:', userData.id);
+                  const defaultRole: UserRole = 'client';
+                  
+                  // استخدام معلومات المستخدم من الحساب إن وجدت
+                  const { data: userMetadata } = await supabase.auth.getUser();
+                  const metadata = userMetadata?.user?.user_metadata || {};
+                  
+                  const { success: createSuccess, data: newProfile } = await createUserProfile({
+                    id: userData.id,
+                    full_name: metadata.full_name || userData.email?.split('@')[0] || 'مستخدم جديد',
+                    role: defaultRole,
+                    phone: metadata.phone || '',
+                    governorate: metadata.governorate || '',
+                    city: metadata.city || '',
+                  });
+                  
+                  if (createSuccess && newProfile && mounted) {
+                    console.log('New profile created successfully in auth state change:', newProfile);
+                    const userRole = newProfile.role as UserRole;
+                    setRole(userRole);
+                    userData.role = userRole;
+                    setUser({ ...userData });
+                  }
+                } catch (createError) {
+                  console.error('Error creating profile in auth state change:', createError);
+                }
               }
               
               if (mounted) setLoading(false);
@@ -105,7 +168,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               console.error('Error fetching user role:', error);
               if (mounted) setLoading(false);
             }
-          }, 100); // تأخير أكبر للتأكد من اكتمال عملية التسجيل
+          }, 300); // زيادة فترة التأخير لضمان اكتمال عمليات المصادقة
         } else {
           if (mounted) {
             setUser(null);

@@ -22,7 +22,7 @@ import {
 
 const SignIn = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [isRedirecting, setIsRedirecting] = useState(false); // New state for tracking redirection
+  const [isRedirecting, setIsRedirecting] = useState(false); // حالة للتتبع عملية التوجيه
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -70,30 +70,21 @@ const SignIn = () => {
       // تعيين حالة التوجيه إلى true عندما نبدأ في التوجيه
       setIsRedirecting(true);
       
-      // التأكد من وجود ملف شخصي للمستخدم بعد تسجيل الدخول
-      if (data?.user) {
-        console.log("Checking if user has a profile:", data.user.id);
-        const userId = data.user.id;
-        
-        // توجيه المستخدم إلى صفحة الملف الشخصي بعد تسجيل الدخول بتأخير قليل
-        // لضمان تحميل البيانات بشكل صحيح وتحديث حالة المصادقة
-        setTimeout(async () => {
-          try {
-            const { success, data: profileData } = await getUserProfile(userId);
-            console.log("Profile check result:", success, profileData);
-          } catch (error) {
-            console.error("Error checking user profile:", error);
-          }
+      // زيادة وقت التأخير لضمان اكتمال عمليات المصادقة وتحميل الملف الشخصي
+      setTimeout(async () => {
+        try {
+          // انتظار تحميل المزيد من البيانات وإنشاء الملف الشخصي إذا لزم الأمر
+          await new Promise(resolve => setTimeout(resolve, 1000));
           
+          // توجيه المستخدم إلى صفحة الملف الشخصي
           navigate('/profile');
+        } catch (error) {
+          console.error("Error during redirect:", error);
+        } finally {
           setIsLoading(false);
           setIsRedirecting(false);
-        }, 2000); // زيادة التأخير للتأكد من تحميل بيانات المستخدم
-      } else {
-        setIsLoading(false);
-        setIsRedirecting(false);
-        navigate('/profile');
-      }
+        }
+      }, 3000); // زيادة التأخير لـ 3 ثوان
     } catch (error) {
       console.error("Error in sign in process:", error);
       toast({
