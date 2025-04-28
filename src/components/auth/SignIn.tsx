@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -54,7 +55,7 @@ const SignIn = () => {
         }
         
         toast("خطأ في تسجيل الدخول: " + errorMessage, {
-          variant: "destructive"
+          style: { backgroundColor: 'rgb(220, 38, 38)', color: 'white' }
         });
         
         setIsLoading(false);
@@ -96,7 +97,7 @@ const SignIn = () => {
               console.error("Error creating profile:", createError);
               // عرض رسالة خطأ ولكن مواصلة عملية تسجيل الدخول
               toast("تم تسجيل الدخول ولكن قد تكون هناك مشكلة في إنشاء الملف الشخصي", {
-                variant: "warning"
+                style: { backgroundColor: '#f59e0b', color: 'white' }
               });
             } else {
               console.log("Profile created successfully:", newProfile);
@@ -112,7 +113,7 @@ const SignIn = () => {
           if (!sessionCheck?.session) {
             console.error("Session lost after profile check!");
             toast("خطأ في الجلسة: تم فقدان جلسة المستخدم، يرجى المحاولة مرة أخرى", {
-              variant: "destructive"
+              style: { backgroundColor: 'rgb(220, 38, 38)', color: 'white' }
             });
             setIsLoading(false);
             setIsRedirecting(false);
@@ -134,7 +135,7 @@ const SignIn = () => {
           } else {
             console.error("No session found before redirect!");
             toast("خطأ في الجلسة: تم فقدان جلسة المستخدم، يرجى المحاولة مرة أخرى", {
-              variant: "destructive"
+              style: { backgroundColor: 'rgb(220, 38, 38)', color: 'white' }
             });
           }
           setIsLoading(false);
@@ -144,7 +145,7 @@ const SignIn = () => {
     } catch (error) {
       console.error("Error in sign in process:", error);
       toast("خطأ في النظام: حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى", {
-        variant: "destructive"
+        style: { backgroundColor: 'rgb(220, 38, 38)', color: 'white' }
       });
       setIsLoading(false);
     }

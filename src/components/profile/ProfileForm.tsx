@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -50,13 +51,13 @@ const ProfileForm = ({ profile }: ProfileFormProps) => {
         toast("تم تحديث المعلومات الشخصية بنجاح");
       } else if (error) {
         toast("خطأ في التحديث: " + error.message, {
-          variant: "destructive"
+          style: { backgroundColor: 'rgb(220, 38, 38)', color: 'white' }
         });
       }
     } catch (error) {
       console.error('Error updating profile:', error);
       toast("خطأ في النظام: حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى", {
-        variant: "destructive"
+        style: { backgroundColor: 'rgb(220, 38, 38)', color: 'white' }
       });
     } finally {
       setIsLoading(false);

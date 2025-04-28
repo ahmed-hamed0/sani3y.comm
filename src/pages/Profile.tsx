@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layouts/MainLayout';
@@ -69,7 +70,7 @@ const Profile = () => {
           setError(profileError.message || "لم يتم العثور على الملف الشخصي");
           
           toast("خطأ في تحميل الملف الشخصي: " + (profileError.message || "لم يتم العثور على الملف الشخصي"), {
-            variant: "destructive"
+            style: { backgroundColor: 'rgb(220, 38, 38)', color: 'white' }
           });
         }
       } catch (error) {
@@ -90,7 +91,7 @@ const Profile = () => {
     const file = files[0];
     if (file.size > 5 * 1024 * 1024) {
       toast("خطأ في تحميل الصورة: حجم الملف كبير جداً (الحد الأقصى 5 ميجابايت)", {
-        variant: "destructive"
+        style: { backgroundColor: 'rgb(220, 38, 38)', color: 'white' }
       });
       return;
     }
@@ -103,13 +104,13 @@ const Profile = () => {
         toast("تم تحديث الصورة الشخصية بنجاح");
       } else if (error) {
         toast("خطأ في تحميل الصورة: " + error.message, {
-          variant: "destructive"
+          style: { backgroundColor: 'rgb(220, 38, 38)', color: 'white' }
         });
       }
     } catch (error) {
       console.error("Error uploading avatar:", error);
       toast("خطأ في تحميل الصورة: حدث خطأ غير متوقع أثناء تحميل الصورة", {
-        variant: "destructive"
+        style: { backgroundColor: 'rgb(220, 38, 38)', color: 'white' }
       });
     } finally {
       setIsUploading(false);
@@ -135,7 +136,7 @@ const Profile = () => {
       } else if (profileError) {
         setError(profileError.message || "لم يتم العثور على الملف الشخصي");
         toast("خطأ في التحديث: " + (profileError.message || "لم يتم العثور على الملف الشخصي"), {
-          variant: "destructive"
+          style: { backgroundColor: 'rgb(220, 38, 38)', color: 'white' }
         });
       }
     } catch (error) {
