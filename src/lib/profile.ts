@@ -4,6 +4,14 @@ import { UserRole } from "@/types";
 
 // الحصول على الملف الشخصي
 export async function getUserProfile(userId: string) {
+  if (!userId) {
+    console.error("getUserProfile called without userId");
+    return { 
+      success: false, 
+      error: { message: "معرف المستخدم غير متوفر" } 
+    };
+  }
+
   try {
     console.log("Getting profile for user ID:", userId);
     const { data: profile, error } = await supabase
@@ -40,7 +48,25 @@ export async function getUserProfile(userId: string) {
             city: userData.user.user_metadata?.city || '',
           };
           
-          console.log("Attempting to create profile with data:", newProfileData);
+          console.log("Creating profile with data:", newProfileData);
+          
+          // تحقق مما إذا كان الملف الشخصي موجود قبل محاولة الإنشاء (لتفادي الخطأ)
+          const { data: existingProfile } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('id', userId)
+            .maybeSingle();
+            
+          if (existingProfile) {
+            console.log("Profile already exists, fetching it again");
+            const { data: refetchedProfile } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', userId)
+              .maybeSingle();
+              
+            return { success: true, data: refetchedProfile };
+          }
           
           const { data: newProfile, error: createError } = await supabase
             .from('profiles')
@@ -107,6 +133,13 @@ export async function createUserProfile(profileData: {
   city: string;
   avatar_url?: string;
 }) {
+  if (!profileData.id) {
+    return { 
+      success: false, 
+      error: { message: "معرف المستخدم مطلوب" } 
+    };
+  }
+
   try {
     console.log("Creating new user profile with data:", profileData);
     
@@ -128,16 +161,44 @@ export async function createUserProfile(profileData: {
       return { success: true, data: fullProfile };
     }
     
-    // إنشاء ملف شخصي جديد
-    const { error, data: newProfile } = await supabase
-      .from('profiles')
-      .insert([profileData])
-      .select()
-      .maybeSingle();
+    // إنشاء ملف شخصي جديد مع محاولات متكررة
+    let attempts = 0;
+    let success = false;
+    let error = null;
+    let newProfile = null;
     
-    if (error) {
-      console.error("Error creating profile:", error);
-      return { success: false, error: { message: error.message } };
+    while (attempts < 3 && !success) {
+      attempts++;
+      console.log(`Creating profile attempt ${attempts}`);
+      
+      try {
+        const result = await supabase
+          .from('profiles')
+          .insert([profileData])
+          .select()
+          .maybeSingle();
+          
+        error = result.error;
+        newProfile = result.data;
+        
+        if (!error && newProfile) {
+          success = true;
+          console.log("Profile created successfully on attempt", attempts);
+        } else {
+          console.error("Error on attempt", attempts, error);
+          // Wait before retrying
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      } catch (e) {
+        console.error("Exception during profile creation attempt", attempts, e);
+      }
+    }
+    
+    if (!success) {
+      return { 
+        success: false, 
+        error: { message: error ? error.message : "فشل في إنشاء الملف الشخصي بعد عدة محاولات" } 
+      };
     }
 
     // إنشاء تفاصيل الصنايعي إذا كان الدور هو صنايعي

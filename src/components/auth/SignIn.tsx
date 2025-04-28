@@ -11,7 +11,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema } from '@/lib/auth';
 import { Spinner } from '@/components/ui/spinner';
-import { getUserProfile } from '@/lib/profile';
+import { createUserProfile, getUserProfile } from '@/lib/profile';
 import {
   Form,
   FormControl,
@@ -22,7 +22,7 @@ import {
 
 const SignIn = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [isRedirecting, setIsRedirecting] = useState(false); // حالة للتتبع عملية التوجيه
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -45,7 +45,6 @@ const SignIn = () => {
       if (!success && error) {
         let errorMessage = error.message;
         
-        // ترجمة رسائل الخطأ الشائعة
         if (error.message.includes("Invalid login credentials")) {
           errorMessage = "بيانات تسجيل الدخول غير صحيحة";
         } else if (error.message.includes("Email not confirmed")) {
@@ -70,21 +69,39 @@ const SignIn = () => {
       // تعيين حالة التوجيه إلى true عندما نبدأ في التوجيه
       setIsRedirecting(true);
       
-      // زيادة وقت التأخير لضمان اكتمال عمليات المصادقة وتحميل الملف الشخصي
-      setTimeout(async () => {
+      if (data?.user) {
         try {
-          // انتظار تحميل المزيد من البيانات وإنشاء الملف الشخصي إذا لزم الأمر
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          // تأكد من وجود ملف شخصي للمستخدم أو إنشاء ملف جديد
+          const { success: profileSuccess, data: profileData } = await getUserProfile(data.user.id);
           
-          // توجيه المستخدم إلى صفحة الملف الشخصي
-          navigate('/profile');
-        } catch (error) {
-          console.error("Error during redirect:", error);
-        } finally {
-          setIsLoading(false);
-          setIsRedirecting(false);
+          // إذا لم يتم العثور على ملف شخصي، قم بإنشاء ملف جديد
+          if (!profileSuccess || !profileData) {
+            console.log("Creating new profile for user:", data.user.id);
+            
+            const metadata = data.user.user_metadata || {};
+            
+            // استخدام معلومات المستخدم من الحساب إن وجدت لإنشاء ملف شخصي
+            await createUserProfile({
+              id: data.user.id,
+              full_name: metadata.full_name || data.user.email?.split('@')[0] || 'مستخدم جديد',
+              role: 'client',
+              phone: metadata.phone || '',
+              governorate: metadata.governorate || '',
+              city: metadata.city || '',
+            });
+          }
+        } catch (profileError) {
+          console.error("Error checking/creating profile:", profileError);
+          // لا نريد إيقاف عملية تسجيل الدخول بسبب خطأ في الملف الشخصي
         }
-      }, 3000); // زيادة التأخير لـ 3 ثوان
+      }
+      
+      // زيادة وقت التأخير لضمان اكتمال عمليات المصادقة وتحميل الملف الشخصي
+      setTimeout(() => {
+        navigate('/profile');
+        setIsLoading(false);
+        setIsRedirecting(false);
+      }, 2000);
     } catch (error) {
       console.error("Error in sign in process:", error);
       toast({
