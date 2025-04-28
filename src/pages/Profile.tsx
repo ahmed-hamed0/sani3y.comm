@@ -12,15 +12,17 @@ import { Spinner } from '@/components/ui/spinner';
 import ProfileForm from '@/components/profile/ProfileForm';
 import CraftsmanProfileForm from '@/components/profile/CraftsmanProfileForm';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, RefreshCw } from 'lucide-react';
+import { toast } from '@/components/ui/sonner';
 
 const Profile = () => {
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { toast: hookToast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -33,17 +35,42 @@ const Profile = () => {
       try {
         console.log("Fetching profile for user:", user.id);
         setError(null);
-        const { success, data, error: profileError } = await getUserProfile(user.id);
         
-        if (success && data) {
-          console.log("Profile loaded successfully:", data);
-          setProfile(data);
+        // Try up to 3 times to fetch the profile
+        let attempts = 0;
+        let success = false;
+        let profileData = null;
+        let profileError = null;
+        
+        while (attempts < 3 && !success) {
+          attempts++;
+          console.log(`Attempt ${attempts} to fetch profile`);
+          
+          const result = await getUserProfile(user.id);
+          success = result.success;
+          profileData = result.data;
+          profileError = result.error;
+          
+          if (success && profileData) {
+            break;
+          }
+          
+          // Wait before retrying
+          if (!success && attempts < 3) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
+        
+        if (success && profileData) {
+          console.log("Profile loaded successfully:", profileData);
+          setProfile(profileData);
         } else if (profileError) {
-          console.error("Error loading profile:", profileError);
-          setError(profileError.message);
+          console.error("Error loading profile after multiple attempts:", profileError);
+          setError(profileError.message || "لم يتم العثور على الملف الشخصي");
+          
           toast({
             title: "خطأ في تحميل الملف الشخصي",
-            description: profileError.message,
+            description: profileError.message || "لم يتم العثور على الملف الشخصي",
             variant: "destructive"
           });
         }
@@ -56,7 +83,7 @@ const Profile = () => {
     };
 
     fetchProfile();
-  }, [user, toast]);
+  }, [user]);
 
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -100,16 +127,40 @@ const Profile = () => {
     }
   };
 
-  const refreshProfile = async () => {
+  const refreshProfileData = async () => {
     if (!user) return;
     
-    setIsLoading(true);
-    const { success, data } = await getUserProfile(user.id);
-    if (success && data) {
-      setProfile(data);
+    setIsRefreshing(true);
+    try {
+      // First refresh the auth context profile
+      await refreshProfile();
+      
+      // Then fetch the profile data again
+      setIsLoading(true);
       setError(null);
+      const { success, data, error: profileError } = await getUserProfile(user.id);
+      
+      if (success && data) {
+        setProfile(data);
+        toast({
+          title: "تم التحديث",
+          description: "تم تحديث الملف الشخصي بنجاح"
+        });
+      } else if (profileError) {
+        setError(profileError.message || "لم يتم العثور على الملف الشخصي");
+        toast({
+          title: "خطأ في التحديث",
+          description: profileError.message || "لم يتم العثور على الملف الشخصي",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error refreshing profile:", error);
+      setError("حدث خطأ غير متوقع أثناء تحديث الملف الشخصي");
+    } finally {
+      setIsRefreshing(false);
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   if (isLoading) {
@@ -135,10 +186,23 @@ const Profile = () => {
           </Alert>
           
           <div className="flex justify-center mt-6">
-            <Button onClick={() => navigate('/')}>العودة إلى الصفحة الرئيسية</Button>
-            <Button variant="outline" onClick={refreshProfile} className="mr-4">
-              إعادة المحاولة
+            <Button 
+              variant="outline" 
+              onClick={refreshProfileData} 
+              className="mr-4"
+              disabled={isRefreshing}
+            >
+              {isRefreshing ? (
+                <>
+                  <Spinner size="sm" className="ml-2" /> جاري التحديث...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4 ml-2" /> إعادة المحاولة
+                </>
+              )}
             </Button>
+            <Button onClick={() => navigate('/')}>العودة إلى الصفحة الرئيسية</Button>
           </div>
         </div>
       </MainLayout>
@@ -156,10 +220,23 @@ const Profile = () => {
           </Alert>
           
           <div className="flex justify-center mt-6">
-            <Button onClick={() => navigate('/')}>العودة إلى الصفحة الرئيسية</Button>
-            <Button variant="outline" onClick={refreshProfile} className="mr-4">
-              إعادة المحاولة
+            <Button 
+              variant="outline" 
+              onClick={refreshProfileData} 
+              className="mr-4"
+              disabled={isRefreshing}
+            >
+              {isRefreshing ? (
+                <>
+                  <Spinner size="sm" className="ml-2" /> جاري التحديث...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4 ml-2" /> إعادة المحاولة
+                </>
+              )}
             </Button>
+            <Button onClick={() => navigate('/')}>العودة إلى الصفحة الرئيسية</Button>
           </div>
         </div>
       </MainLayout>

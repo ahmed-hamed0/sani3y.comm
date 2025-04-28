@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { getUserProfile, createUserProfile } from '@/lib/profile';
 import { UserRole } from '@/types';
+import { toast } from '@/components/ui/sonner';
 
 type UserData = SupabaseUser & {
   role?: UserRole | null;
@@ -15,6 +16,7 @@ type AuthContextType = {
   role: UserRole | null;
   isClient: boolean;
   isCraftsman: boolean;
+  refreshProfile: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -22,7 +24,8 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   role: null,
   isClient: false,
-  isCraftsman: false
+  isCraftsman: false,
+  refreshProfile: async () => {}
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -30,9 +33,87 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState<UserRole | null>(null);
   
+  const refreshProfile = async () => {
+    if (!user) return;
+    
+    try {
+      console.log("Refreshing profile for user:", user.id);
+      const { success, data, error } = await getUserProfile(user.id);
+      
+      if (success && data) {
+        console.log("Refreshed profile successfully:", data);
+        const userRole = data.role as UserRole;
+        setRole(userRole);
+        setUser(prevUser => {
+          if (prevUser) {
+            return { ...prevUser, role: userRole };
+          }
+          return prevUser;
+        });
+      } else {
+        console.error("Error refreshing profile:", error);
+      }
+    } catch (err) {
+      console.error("Exception refreshing profile:", err);
+    }
+  };
+  
+  const loadUserProfile = async (userData: UserData) => {
+    try {
+      console.log('Loading profile for user:', userData.id);
+      
+      let { success, data: profileData, error: profileError } = await getUserProfile(userData.id);
+      
+      if (!success || !profileData) {
+        console.log('No profile found, creating a new one for user:', userData.id);
+        
+        try {
+          const { data: userMetadata } = await supabase.auth.getUser();
+          const metadata = userMetadata?.user?.user_metadata || {};
+          
+          const { success: createSuccess, data: newProfile } = await createUserProfile({
+            id: userData.id,
+            full_name: metadata.full_name || userData.email?.split('@')[0] || 'مستخدم جديد',
+            role: 'client' as UserRole,
+            phone: metadata.phone || '+201000000000',
+            governorate: metadata.governorate || 'القاهرة',
+            city: metadata.city || 'القاهرة',
+          });
+          
+          if (createSuccess && newProfile) {
+            console.log('New profile created successfully:', newProfile);
+            profileData = newProfile;
+            success = true;
+            profileError = null;
+          } else {
+            console.error('Failed to create profile');
+          }
+        } catch (createError) {
+          console.error('Error creating profile:', createError);
+        }
+      }
+      
+      if (success && profileData) {
+        console.log('Profile loaded/created:', profileData);
+        const userRole = profileData.role as UserRole;
+        setRole(userRole);
+        userData.role = userRole;
+        setUser({ ...userData });
+      } else {
+        console.error('Failed to load or create profile:', profileError);
+        setUser(userData);
+      }
+      
+      setLoading(false);
+    } catch (error) {
+      console.error('Error in loadUserProfile function:', error);
+      setUser(userData);
+      setLoading(false);
+    }
+  };
+  
   useEffect(() => {
     let mounted = true;
-    let profileCreationAttempted = false;
     
     const checkCurrentUser = async () => {
       try {
@@ -57,7 +138,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                   console.error("Error loading profile in event listener:", error);
                   setLoading(false);
                 }
-              }, 500);
+              }, 1000);
             } else {
               if (mounted) {
                 setUser(null);
@@ -96,59 +177,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     };
     
-    const loadUserProfile = async (userData: UserData) => {
-      try {
-        console.log('Loading profile for user:', userData.id);
-        const { success, data, error: profileError } = await getUserProfile(userData.id);
-        
-        if (success && data && mounted) {
-          console.log('Profile found:', data);
-          const userRole = data.role as UserRole;
-          setRole(userRole);
-          userData.role = userRole;
-          setUser({ ...userData });
-        } else {
-          console.log('No profile found or error:', profileError);
-          
-          if (!profileCreationAttempted) {
-            profileCreationAttempted = true;
-            
-            try {
-              console.log('Creating profile for user:', userData.id);
-              const defaultRole: UserRole = 'client';
-              
-              const { data: userMetadata } = await supabase.auth.getUser();
-              const metadata = userMetadata?.user?.user_metadata || {};
-              
-              const { success: createSuccess, data: newProfile } = await createUserProfile({
-                id: userData.id,
-                full_name: metadata.full_name || userData.email?.split('@')[0] || 'مستخدم جديد',
-                role: defaultRole,
-                phone: metadata.phone || '',
-                governorate: metadata.governorate || '',
-                city: metadata.city || '',
-              });
-              
-              if (createSuccess && newProfile && mounted) {
-                console.log('New profile created successfully:', newProfile);
-                const userRole = newProfile.role as UserRole;
-                setRole(userRole);
-                userData.role = userRole;
-                setUser({ ...userData });
-              }
-            } catch (createError) {
-              console.error('Error creating profile:', createError);
-            }
-          }
-        }
-        
-        if (mounted) setLoading(false);
-      } catch (error) {
-        console.error('Error loading user profile:', error);
-        if (mounted) setLoading(false);
-      }
-    };
-    
     checkCurrentUser();
     
     return () => {
@@ -160,7 +188,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const isCraftsman = role === 'craftsman';
 
   return (
-    <AuthContext.Provider value={{ user, loading, role, isClient, isCraftsman }}>
+    <AuthContext.Provider value={{ user, loading, role, isClient, isCraftsman, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

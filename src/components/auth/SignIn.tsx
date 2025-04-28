@@ -12,6 +12,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema } from '@/lib/auth';
 import { Spinner } from '@/components/ui/spinner';
 import { createUserProfile, getUserProfile } from '@/lib/profile';
+import { toast } from '@/components/ui/sonner';
 import {
   Form,
   FormControl,
@@ -19,11 +20,12 @@ import {
   FormItem,
   FormMessage,
 } from "@/components/ui/form";
+import { supabase } from '@/integrations/supabase/client';
 
 const SignIn = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
-  const { toast } = useToast();
+  const { toast: hookToast } = useToast();
   const navigate = useNavigate();
 
   const form = useForm<LoginFormValues>({
@@ -71,24 +73,59 @@ const SignIn = () => {
       
       if (data?.user) {
         try {
+          console.log("Checking profile for user:", data.user.id);
+          
           // تأكد من وجود ملف شخصي للمستخدم أو إنشاء ملف جديد
           const { success: profileSuccess, data: profileData } = await getUserProfile(data.user.id);
           
           // إذا لم يتم العثور على ملف شخصي، قم بإنشاء ملف جديد
           if (!profileSuccess || !profileData) {
-            console.log("Creating new profile for user:", data.user.id);
+            console.log("No profile found, creating new profile for user:", data.user.id);
             
             const metadata = data.user.user_metadata || {};
             
-            // استخدام معلومات المستخدم من الحساب إن وجدت لإنشاء ملف شخصي
-            await createUserProfile({
+            // إنشاء ملف شخصي مع بيانات افتراضية إذا لم تتوفر البيانات
+            const createProfileData = {
               id: data.user.id,
               full_name: metadata.full_name || data.user.email?.split('@')[0] || 'مستخدم جديد',
               role: 'client',
-              phone: metadata.phone || '',
-              governorate: metadata.governorate || '',
-              city: metadata.city || '',
+              phone: metadata.phone || '+201000000000', // رقم افتراضي لتجنب مشكلات التحقق
+              governorate: metadata.governorate || 'القاهرة', // قيمة افتراضية
+              city: metadata.city || 'القاهرة', // قيمة افتراضية
+            };
+            
+            console.log("Creating new profile with data:", createProfileData);
+            const { success: createSuccess, data: newProfile, error: createError } = await createUserProfile(createProfileData);
+            
+            if (!createSuccess || createError) {
+              console.error("Error creating profile:", createError);
+              // عرض رسالة خطأ ولكن مواصلة عملية تسجيل الدخول
+              toast({
+                title: "تنبيه",
+                description: "تم تسجيل الدخول ولكن قد تكون هناك مشكلة في إنشاء الملف الشخصي",
+                variant: "warning"
+              });
+            } else {
+              console.log("Profile created successfully:", newProfile);
+            }
+          } else {
+            console.log("Profile found:", profileData);
+          }
+          
+          // تحقق يدوي من الجلسة للتأكد من بقائها نشطة
+          const { data: sessionCheck } = await supabase.auth.getSession();
+          console.log("Current session after profile check:", sessionCheck?.session?.user?.id);
+          
+          if (!sessionCheck?.session) {
+            console.error("Session lost after profile check!");
+            toast({
+              title: "خطأ في الجلسة",
+              description: "تم فقدان جلسة المستخدم، يرجى المحاولة مرة أخرى",
+              variant: "destructive"
             });
+            setIsLoading(false);
+            setIsRedirecting(false);
+            return;
           }
         } catch (profileError) {
           console.error("Error checking/creating profile:", profileError);
@@ -98,10 +135,23 @@ const SignIn = () => {
       
       // زيادة وقت التأخير لضمان اكتمال عمليات المصادقة وتحميل الملف الشخصي
       setTimeout(() => {
-        navigate('/profile');
-        setIsLoading(false);
-        setIsRedirecting(false);
-      }, 2000);
+        // تحقق نهائي من الجلسة قبل التوجيه
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session) {
+            console.log("Session confirmed before redirect:", session.user.id);
+            navigate('/profile');
+          } else {
+            console.error("No session found before redirect!");
+            toast({
+              title: "خطأ في الجلسة",
+              description: "تم فقدان جلسة المستخدم، يرجى المحاولة مرة أخرى",
+              variant: "destructive"
+            });
+          }
+          setIsLoading(false);
+          setIsRedirecting(false);
+        });
+      }, 3000);
     } catch (error) {
       console.error("Error in sign in process:", error);
       toast({

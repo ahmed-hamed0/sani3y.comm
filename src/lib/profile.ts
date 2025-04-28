@@ -18,7 +18,7 @@ export async function getUserProfile(userId: string) {
       .from('profiles')
       .select('*')
       .eq('id', userId)
-      .maybeSingle();  // استخدام maybeSingle بدلاً من single لتجنب الأخطاء
+      .maybeSingle();
     
     if (error) {
       console.error("Error fetching profile:", error);
@@ -37,15 +37,16 @@ export async function getUserProfile(userId: string) {
           // إنشاء ملف شخصي افتراضي
           const defaultRole: UserRole = 'client'; // الدور الافتراضي هو عميل
           const userEmail = userData.user.email;
-          const fullName = userData.user.user_metadata?.full_name || userEmail?.split('@')[0] || 'مستخدم جديد';
+          const metadata = userData.user.user_metadata || {};
+          const fullName = metadata.full_name || userEmail?.split('@')[0] || 'مستخدم جديد';
           
           const newProfileData = {
             id: userId,
             full_name: fullName,
             role: defaultRole,
-            phone: userData.user.user_metadata?.phone || '',
-            governorate: userData.user.user_metadata?.governorate || '',
-            city: userData.user.user_metadata?.city || '',
+            phone: metadata.phone || '+201000000000', // رقم افتراضي لتجنب مشكلات التحقق
+            governorate: metadata.governorate || 'القاهرة', // قيمة افتراضية
+            city: metadata.city || 'القاهرة', // قيمة افتراضية
           };
           
           console.log("Creating profile with data:", newProfileData);
@@ -68,23 +69,51 @@ export async function getUserProfile(userId: string) {
             return { success: true, data: refetchedProfile };
           }
           
-          const { data: newProfile, error: createError } = await supabase
-            .from('profiles')
-            .insert([newProfileData])
-            .select()
-            .maybeSingle();
-          
-          if (createError) {
-            console.error("Error creating profile in getUserProfile:", createError);
+          // محاولة إنشاء الملف الشخصي
+          try {
+            const { data: newProfile, error: createError } = await supabase
+              .from('profiles')
+              .insert([newProfileData])
+              .select()
+              .maybeSingle();
+            
+            if (createError) {
+              console.error("Error creating profile in getUserProfile:", createError);
+              return { 
+                success: false, 
+                error: { message: "فشل في إنشاء ملف شخصي جديد: " + createError.message } 
+              };
+            }
+            
+            if (newProfile) {
+              console.log("New profile created successfully:", newProfile);
+              
+              // إنشاء تفاصيل الصنايعي إذا كان الدور هو صنايعي
+              if (newProfile.role === 'craftsman') {
+                const { error: craftsmanError } = await supabase
+                  .from('craftsman_details')
+                  .insert([{
+                    id: userId,
+                    specialty: 'عام', // تخصص افتراضي
+                    bio: '',
+                    skills: [],
+                    is_available: true
+                  }]);
+                
+                if (craftsmanError) {
+                  console.error("Error creating craftsman details:", craftsmanError);
+                  // لا نريد أن نفشل العملية بالكامل إذا فشل إنشاء تفاصيل الصنايعي
+                }
+              }
+              
+              return { success: true, data: newProfile };
+            }
+          } catch (insertError) {
+            console.error("Exception creating profile:", insertError);
             return { 
               success: false, 
-              error: { message: "فشل في إنشاء ملف شخصي جديد" } 
+              error: { message: "خطأ في إنشاء الملف الشخصي" } 
             };
-          }
-          
-          if (newProfile) {
-            console.log("New profile created successfully:", newProfile);
-            return { success: true, data: newProfile };
           }
         }
       } catch (error) {
@@ -187,7 +216,7 @@ export async function createUserProfile(profileData: {
         } else {
           console.error("Error on attempt", attempts, error);
           // Wait before retrying
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise(resolve => setTimeout(resolve, 1000));
         }
       } catch (e) {
         console.error("Exception during profile creation attempt", attempts, e);
