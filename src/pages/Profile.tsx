@@ -1,10 +1,11 @@
+
 import { useState, useEffect } from 'react';
 import MainLayout from '@/components/layouts/MainLayout';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getUserProfile, uploadAvatar } from '@/lib/profile';
-import { ProfileForm } from '@/components/profile/ProfileForm';
+import ProfileForm from '@/components/profile/ProfileForm';
 import CraftsmanProfileForm from '@/components/profile/CraftsmanProfileForm';
 import { ProfileLoading } from '@/components/profile/ProfileLoading';
 import { ProfileError } from '@/components/profile/ProfileError';
