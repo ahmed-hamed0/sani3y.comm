@@ -23,10 +23,14 @@ import { supabase } from "./integrations/supabase/client";
 // Enable realtime for specific tables
 (async () => {
   try {
-    // Fix: Use a proper type assertion to bypass TypeScript's type checking
-    await supabase.rpc('enable_realtime', { table_name: 'messages' } as any);
-    await supabase.rpc('enable_realtime', { table_name: 'notifications' } as any);
-    await supabase.rpc('enable_realtime', { table_name: 'reviews' } as any);
+    // Fix: Use a properly typed object and cast the entire RPC call parameters
+    const enableRealtimeForTable = (tableName: string) => {
+      return supabase.rpc('enable_realtime', { table_name: tableName } as unknown as {});
+    };
+    
+    await enableRealtimeForTable('messages');
+    await enableRealtimeForTable('notifications');
+    await enableRealtimeForTable('reviews');
     console.log('Enabled realtime for messages, notifications, and reviews tables');
   } catch (error) {
     console.error('Error enabling realtime:', error);
