@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import MainLayout from '@/components/layouts/MainLayout';
 import CraftsmenFilters from '@/components/craftsmen/CraftsmenFilters';
@@ -24,6 +23,8 @@ interface Craftsman {
   created_at: string;
   experience_years: number;
   is_available: boolean;
+  role: string;
+  email: string;
 }
 
 const Craftsmen = () => {
@@ -43,7 +44,6 @@ const Craftsmen = () => {
   useEffect(() => {
     const loadCraftsmen = async () => {
       try {
-        // استعلام للحصول على جميع الصنايعية مع تفاصيلهم
         const { data, error } = await supabase
           .from('profiles')
           .select(`
@@ -73,9 +73,8 @@ const Craftsmen = () => {
         }
 
         if (data) {
-          // تحويل البيانات إلى الشكل المطلوب
           const formattedData = data
-            .filter(item => item.craftsman_details) // فلترة العناصر التي لها تفاصيل صنايعي
+            .filter(item => item.craftsman_details)
             .map(item => ({
               id: item.id,
               full_name: item.full_name,
@@ -89,7 +88,9 @@ const Craftsmen = () => {
               skills: item.craftsman_details?.skills || [],
               created_at: item.created_at,
               experience_years: item.craftsman_details?.experience_years || 0,
-              is_available: item.craftsman_details?.is_available || false
+              is_available: item.craftsman_details?.is_available || false,
+              role: 'craftsman',
+              email: ''
             }));
           
           setCraftsmen(formattedData);
@@ -109,7 +110,6 @@ const Craftsmen = () => {
   const handleFilterChange = (newFilters: any) => {
     setFilters(newFilters);
     
-    // Apply filters
     let result = [...craftsmen];
     
     if (newFilters.searchTerm) {
@@ -146,7 +146,6 @@ const Craftsmen = () => {
       );
     }
     
-    // Sort by rating (highest first)
     result.sort((a, b) => b.rating - a.rating);
     
     setFilteredCraftsmen(result);
@@ -180,7 +179,6 @@ const Craftsmen = () => {
     );
   }
 
-  // التحقق من وجود مستخدم قبل عرض بيانات الصنايعية
   if (!user) {
     return (
       <MainLayout>
@@ -205,12 +203,10 @@ const Craftsmen = () => {
         <h1 className="text-3xl font-bold mb-6">الصنايعية</h1>
         
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Filters - sidebar on desktop, dropdown on mobile */}
           <div className="lg:col-span-1">
             <CraftsmenFilters onFilterChange={handleFilterChange} />
           </div>
           
-          {/* Craftsmen listing */}
           <div className="lg:col-span-3">
             {filteredCraftsmen.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -235,7 +231,9 @@ const Craftsmen = () => {
                       skills: craftsman.skills,
                       availability: craftsman.is_available,
                       createdAt: new Date(craftsman.created_at),
-                      phone: ''
+                      phone: '',
+                      role: 'craftsman',
+                      email: ''
                     }} 
                   />
                 ))}

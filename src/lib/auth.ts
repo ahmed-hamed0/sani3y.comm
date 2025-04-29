@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { UserRole } from "@/types";
 import { z } from "zod";
@@ -45,17 +44,15 @@ export type RegisterFormValues = z.infer<typeof registerSchema>;
 export async function signIn({ email, password, rememberMe }: LoginFormValues) {
   try {
     // تحديد خيارات حفظ الجلسة بناءً على حالة "تذكرني"
-    const options = rememberMe ? {
-      persistSession: true
-    } : {
-      persistSession: false
+    const options = {
+      persistSession: rememberMe ? true : false
     };
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
       options
-    });
+    } as any);
 
     if (error) {
       return { success: false, error: { message: error.message } };

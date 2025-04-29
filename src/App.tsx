@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -20,13 +19,12 @@ import ResetPassword from "./pages/ResetPassword";
 // Import supabase client
 import { supabase } from "./integrations/supabase/client";
 
-// Initialize realtime
+// Enable realtime using a different approach (without type parameters)
 (async () => {
   try {
-    // We'll use RPC functions without type parameters to avoid TypeScript errors
-    await supabase.rpc('enable_realtime', { table_name: 'messages' });
-    await supabase.rpc('enable_realtime', { table_name: 'notifications' });
-    await supabase.rpc('enable_realtime', { table_name: 'reviews' });
+    await supabase.rpc('enable_realtime', { table_name: 'messages' } as any);
+    await supabase.rpc('enable_realtime', { table_name: 'notifications' } as any);
+    await supabase.rpc('enable_realtime', { table_name: 'reviews' } as any);
     console.log('Enabled realtime for messages, notifications, and reviews tables');
   } catch (error) {
     console.error('Error enabling realtime:', error);
