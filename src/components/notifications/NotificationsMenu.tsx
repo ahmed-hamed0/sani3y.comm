@@ -8,16 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
-
-interface Notification {
-  id: string;
-  user_id: string;
-  title: string;
-  message: string;
-  link?: string;
-  read: boolean;
-  created_at: string;
-}
+import { Notification } from '@/types';
 
 export const NotificationsMenu = () => {
   const { user } = useAuth();
@@ -44,7 +35,7 @@ export const NotificationsMenu = () => {
       }
       
       if (data) {
-        setNotifications(data);
+        setNotifications(data as Notification[]);
         // Check if there are any unread notifications
         setHasUnread(data.some(n => !n.read));
       }

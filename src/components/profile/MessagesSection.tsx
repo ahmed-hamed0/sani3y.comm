@@ -7,20 +7,15 @@ import { Spinner } from '@/components/ui/spinner';
 import { toast } from '@/components/ui/sonner';
 import { Send, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { Message } from '@/types';
 
 interface MessagesSectionProps {
   profile: any;
 }
 
-interface Message {
+interface UserInfo {
   id: string;
-  sender_id: string;
-  receiver_id: string;
-  content: string;
-  created_at: string;
-  read: boolean;
-  sender_name?: string;
-  receiver_name?: string;
+  name: string;
 }
 
 const MessagesSection = ({ profile }: MessagesSectionProps) => {
@@ -44,9 +39,7 @@ const MessagesSection = ({ profile }: MessagesSectionProps) => {
           .select(`
             id, 
             sender_id, 
-            receiver_id,
-            profiles!sender_profile(full_name),
-            profiles!receiver_profile(full_name)
+            receiver_id
           `)
           .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
           .order('created_at', { ascending: false });
@@ -58,29 +51,36 @@ const MessagesSection = ({ profile }: MessagesSectionProps) => {
 
         if (data) {
           // Extract unique users from conversations
-          const uniqueUsers = new Map();
+          const uniqueUserIds = new Set<string>();
           
           data.forEach(msg => {
             const otherId = msg.sender_id === user.id ? msg.receiver_id : msg.sender_id;
-            const otherName = msg.sender_id === user.id 
-              ? msg.profiles.full_name
-              : msg.profiles.full_name;
-              
-            if (!uniqueUsers.has(otherId)) {
-              uniqueUsers.set(otherId, otherName);
-            }
+            uniqueUserIds.add(otherId);
           });
           
-          const conversationsList = Array.from(uniqueUsers).map(([id, name]) => ({
-            id,
-            name: name as string
-          }));
+          // Get profile info for each user
+          const userProfiles: {id: string, name: string}[] = [];
           
-          setConversations(conversationsList);
+          for (const userId of uniqueUserIds) {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('id, full_name')
+              .eq('id', userId)
+              .single();
+              
+            if (profileData) {
+              userProfiles.push({
+                id: profileData.id,
+                name: profileData.full_name
+              });
+            }
+          }
+          
+          setConversations(userProfiles);
           
           // If there are conversations and none is selected, select the first one
-          if (conversationsList.length > 0 && !conversationWith) {
-            setConversationWith(conversationsList[0].id);
+          if (userProfiles.length > 0 && !conversationWith) {
+            setConversationWith(userProfiles[0].id);
           }
         }
       } catch (error) {
@@ -99,6 +99,7 @@ const MessagesSection = ({ profile }: MessagesSectionProps) => {
       if (!user?.id || !conversationWith) return;
       
       try {
+        // Get messages for this conversation
         const { data, error } = await supabase
           .from('messages')
           .select(`
@@ -107,9 +108,7 @@ const MessagesSection = ({ profile }: MessagesSectionProps) => {
             receiver_id, 
             content, 
             created_at, 
-            read,
-            profiles!sender_profile(full_name),
-            profiles!receiver_profile(full_name)
+            read
           `)
           .or(`and(sender_id.eq.${user.id},receiver_id.eq.${conversationWith}),and(sender_id.eq.${conversationWith},receiver_id.eq.${user.id})`)
           .order('created_at', { ascending: true });
@@ -121,10 +120,10 @@ const MessagesSection = ({ profile }: MessagesSectionProps) => {
 
         if (data) {
           // Format messages with names for display
-          const formattedMessages = data.map(msg => ({
+          const formattedMessages: Message[] = data.map(msg => ({
             ...msg,
-            sender_name: msg.profiles?.full_name || 'مستخدم',
-            receiver_name: msg.profiles?.full_name || 'مستخدم'
+            sender_name: msg.sender_id === user.id ? 'You' : 'Other User',
+            receiver_name: msg.receiver_id === user.id ? 'You' : 'Other User'
           }));
           
           setMessages(formattedMessages);

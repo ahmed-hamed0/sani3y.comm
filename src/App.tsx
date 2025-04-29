@@ -17,6 +17,21 @@ import About from "./pages/About";
 import Profile from "./pages/Profile";
 import ResetPassword from "./pages/ResetPassword";
 
+// Enable realtime for both messages and notifications tables
+// This happens once when the app loads
+import { supabase } from "./integrations/supabase/client";
+
+// Initialize realtime
+(async () => {
+  try {
+    await supabase.rpc('enable_realtime', { table_name: 'messages' });
+    await supabase.rpc('enable_realtime', { table_name: 'notifications' });
+    console.log('Enabled realtime for messages and notifications tables');
+  } catch (error) {
+    console.error('Error enabling realtime:', error);
+  }
+})();
+
 const queryClient = new QueryClient();
 
 const App = () => (
