@@ -42,15 +42,30 @@ export const registerSchema = z.object({
 export type RegisterFormValues = z.infer<typeof registerSchema>;
 
 // تسجيل الدخول
-export async function signIn({ email, password }: LoginFormValues) {
+export async function signIn({ email, password, rememberMe }: LoginFormValues) {
   try {
+    // تحديد خيارات حفظ الجلسة بناءً على حالة "تذكرني"
+    const options = rememberMe ? {
+      persistSession: true
+    } : {
+      persistSession: false
+    };
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
+      options
     });
 
     if (error) {
       return { success: false, error: { message: error.message } };
+    }
+
+    // إذا كان المستخدم يريد تذكره، قم بتخزين ذلك في localStorage
+    if (rememberMe) {
+      localStorage.setItem('rememberMe', 'true');
+    } else {
+      localStorage.removeItem('rememberMe');
     }
 
     return { success: true, data };
@@ -58,6 +73,46 @@ export async function signIn({ email, password }: LoginFormValues) {
     return { 
       success: false, 
       error: { message: "حدث خطأ أثناء تسجيل الدخول" } 
+    };
+  }
+}
+
+// إعادة تعيين كلمة المرور
+export async function resetPassword(email: string) {
+  try {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/reset-password',
+    });
+
+    if (error) {
+      return { success: false, error: { message: error.message } };
+    }
+
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: { message: "حدث خطأ أثناء إرسال رابط إعادة تعيين كلمة المرور" }
+    };
+  }
+}
+
+// تغيير كلمة المرور
+export async function updatePassword(newPassword: string) {
+  try {
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+
+    if (error) {
+      return { success: false, error: { message: error.message } };
+    }
+
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: { message: "حدث خطأ أثناء تغيير كلمة المرور" }
     };
   }
 }
@@ -136,7 +191,7 @@ export async function signUp(values: RegisterFormValues) {
 
       if (craftsmanError) {
         console.error("Craftsman details creation error:", craftsmanError);
-        // لا نريد إرجاع خطأ هنا لأن المستخدم قد تم إنشاؤه بنجاح
+        // لا نريد أن نفشل العملية بالكامل إذا فشل إنشاء تفاصيل الصنايعي
         // سيقوم المستخدم بإدخال تفاصيل الصنايعي لاحقًا في صفحة الملف الشخصي
       }
     }
@@ -154,6 +209,9 @@ export async function signUp(values: RegisterFormValues) {
 // تسجيل الخروج
 export async function signOut() {
   try {
+    // إزالة حالة "تذكرني" عند تسجيل الخروج
+    localStorage.removeItem('rememberMe');
+    
     const { error } = await supabase.auth.signOut();
     
     if (error) {

@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState } from 'react';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
@@ -115,12 +116,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     let mounted = true;
     
-    const checkCurrentUser = async () => {
+    // طريقة التهيئة الصحيحة: إعداد مستمعي حالة المصادقة أولًا
+    // ثم التحقق من وجود جلسة حالية
+    const initAuth = async () => {
       try {
-        console.log('Checking current user...');
+        console.log('Initializing authentication...');
         
+        // تحديد خيارات الإصرار بناءً على حالة "تذكرني"
+        const shouldPersistSession = localStorage.getItem('rememberMe') === 'true';
+        console.log('Should persist session:', shouldPersistSession);
+        
+        // إعداد مستمع لتغييرات حالة المصادقة
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          (event, session) => {
+          async (event, session) => {
             if (!mounted) return;
             
             console.log('Auth state changed:', event, session?.user?.email);
@@ -130,6 +138,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               userData.role = null;
               setUser(userData);
               
+              // استخدام setTimeout لتأخير تحميل الملف الشخصي
+              // لتجنب مشاكل التزامن مع مكتبة المصادقة
               setTimeout(async () => {
                 if (!mounted) return;
                 try {
@@ -138,7 +148,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                   console.error("Error loading profile in event listener:", error);
                   setLoading(false);
                 }
-              }, 1000);
+              }, 500);
             } else {
               if (mounted) {
                 setUser(null);
@@ -149,6 +159,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           }
         );
         
+        // التحقق من وجود جلسة حالية
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session?.user && mounted) {
@@ -172,12 +183,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           subscription.unsubscribe();
         };
       } catch (error) {
-        console.error('Error checking current user:', error);
+        console.error('Error initializing auth:', error);
         if (mounted) setLoading(false);
       }
     };
     
-    checkCurrentUser();
+    initAuth();
     
     return () => {
       mounted = false;

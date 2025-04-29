@@ -11,7 +11,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema } from '@/lib/auth';
 import { Spinner } from '@/components/ui/spinner';
-import { createUserProfile, getUserProfile } from '@/lib/profile';
+import { getUserProfile, createUserProfile } from '@/lib/profile';
 import { toast } from '@/components/ui/sonner';
 import { UserRole } from '@/types';
 import {
@@ -26,6 +26,9 @@ import { supabase } from '@/integrations/supabase/client';
 const SignIn = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [isResetSent, setIsResetSent] = useState(false);
   const { toast: hookToast } = useToast();
   const navigate = useNavigate();
 
@@ -37,6 +40,39 @@ const SignIn = () => {
       rememberMe: false
     }
   });
+
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetEmail || !resetEmail.includes('@')) {
+      toast("الرجاء إدخال بريد إلكتروني صحيح", {
+        style: { backgroundColor: 'rgb(220, 38, 38)', color: 'white' }
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: window.location.origin + '/reset-password',
+      });
+
+      if (error) {
+        toast("خطأ في إرسال رسالة إعادة تعيين كلمة المرور: " + error.message, {
+          style: { backgroundColor: 'rgb(220, 38, 38)', color: 'white' }
+        });
+      } else {
+        setIsResetSent(true);
+        toast("تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني");
+      }
+    } catch (error) {
+      console.error("Error in password reset:", error);
+      toast("حدث خطأ غير متوقع أثناء محاولة إعادة تعيين كلمة المرور", {
+        style: { backgroundColor: 'rgb(220, 38, 38)', color: 'white' }
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const onSubmit = async (values: LoginFormValues) => {
     setIsLoading(true);
@@ -68,6 +104,13 @@ const SignIn = () => {
       setIsRedirecting(true);
       
       if (data?.user) {
+        // إذا كان المستخدم يريد تذكر تسجيل الدخول
+        if (values.rememberMe) {
+          localStorage.setItem('rememberMe', 'true');
+        } else {
+          localStorage.removeItem('rememberMe');
+        }
+        
         try {
           console.log("Checking profile for user:", data.user.id);
           
@@ -151,6 +194,66 @@ const SignIn = () => {
     }
   };
 
+  if (showResetPassword) {
+    return (
+      <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
+        <h1 className="text-2xl font-bold mb-6 text-center">إعادة تعيين كلمة المرور</h1>
+        
+        {isResetSent ? (
+          <div className="text-center">
+            <p className="mb-4">تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني.</p>
+            <p className="mb-6">يرجى التحقق من بريدك الإلكتروني واتباع التعليمات.</p>
+            <Button 
+              onClick={() => {
+                setShowResetPassword(false);
+                setIsResetSent(false);
+                setResetEmail('');
+              }}
+            >
+              العودة إلى تسجيل الدخول
+            </Button>
+          </div>
+        ) : (
+          <form onSubmit={handlePasswordReset} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="reset-email">البريد الإلكتروني</Label>
+              <Input 
+                id="reset-email" 
+                type="email" 
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                placeholder="أدخل بريدك الإلكتروني"
+                disabled={isLoading}
+                required
+              />
+            </div>
+            
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Spinner size="sm" className="ml-2" />
+                  جاري الإرسال...
+                </>
+              ) : (
+                "إرسال رابط إعادة التعيين"
+              )}
+            </Button>
+            
+            <Button
+              type="button" 
+              variant="ghost" 
+              className="w-full mt-2"
+              onClick={() => setShowResetPassword(false)}
+              disabled={isLoading}
+            >
+              العودة إلى تسجيل الدخول
+            </Button>
+          </form>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
       <h1 className="text-2xl font-bold mb-6 text-center">تسجيل الدخول</h1>
@@ -178,9 +281,14 @@ const SignIn = () => {
               <FormItem>
                 <div className="flex justify-between items-center">
                   <Label htmlFor="password">كلمة المرور</Label>
-                  <Link to="/forgot-password" className="text-sm text-primary hover:underline">
+                  <Button 
+                    type="button"
+                    variant="link" 
+                    className="p-0 h-auto text-sm"
+                    onClick={() => setShowResetPassword(true)}
+                  >
                     نسيت كلمة المرور؟
-                  </Link>
+                  </Button>
                 </div>
                 <FormControl>
                   <Input id="password" type="password" disabled={isLoading} {...field} />
