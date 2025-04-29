@@ -8,7 +8,6 @@ import FeaturedJobs from '@/components/home/FeaturedJobs';
 import Testimonials from '@/components/home/Testimonials';
 import CallToAction from '@/components/home/CallToAction';
 import { supabase } from '@/integrations/supabase/client';
-import { JOBS } from '@/data/mockData'; // Import mock data for jobs
 
 interface CraftsmanData {
   id: string;
@@ -103,23 +102,6 @@ const Index = () => {
 
     const loadRecentJobs = async () => {
       try {
-        // Since we don't have a jobs table in the database yet, we'll use mock data temporarily
-        // Remove this mock data once we create the jobs table
-        console.log("Using mock data for jobs since no jobs table exists yet");
-        setRecentJobs(JOBS.slice(0, 3).map(job => ({
-          id: job.id,
-          title: job.title,
-          description: job.description,
-          category: job.category,
-          location: job.location,
-          budget: job.budget,
-          clientId: job.clientId,
-          status: job.status,
-          postedAt: new Date(job.postedAt)
-        })));
-        
-        /* 
-        // Uncomment this once we have a jobs table
         const { data, error } = await supabase
           .from('jobs')
           .select('*')
@@ -132,7 +114,7 @@ const Index = () => {
           return;
         }
 
-        if (data) {
+        if (data && data.length > 0) {
           const formattedJobs = data.map(job => ({
             id: job.id,
             title: job.title,
@@ -146,13 +128,12 @@ const Index = () => {
               ? { min: job.budget_min, max: job.budget_max } 
               : undefined,
             clientId: job.client_id,
-            status: job.status,
+            status: job.status as 'open' | 'assigned' | 'completed',
             postedAt: new Date(job.created_at)
           }));
 
           setRecentJobs(formattedJobs);
         }
-        */
       } catch (error) {
         console.error('Error in loadRecentJobs:', error);
       }

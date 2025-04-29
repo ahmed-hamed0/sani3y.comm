@@ -94,41 +94,44 @@ const PostJobForm = () => {
     setIsSubmitting(true);
     
     try {
-      // إعداد بيانات المهمة
+      // Prepare job data for Supabase
       const jobData = {
         title: formData.title,
-        category: formData.category,
         description: formData.description,
-        location: {
-          governorate: formData.governorate,
-          city: formData.city,
-          address: formData.address || null,
-        },
-        budget: {
-          min: formData.budgetMin ? Number(formData.budgetMin) : null,
-          max: formData.budgetMax ? Number(formData.budgetMax) : null,
-        },
+        category: formData.category,
+        governorate: formData.governorate,
+        city: formData.city,
+        address: formData.address || null,
+        budget_min: formData.budgetMin ? Number(formData.budgetMin) : null,
+        budget_max: formData.budgetMax ? Number(formData.budgetMax) : null,
         client_id: user.id,
         status: 'open',
         craftsman_id: preselectedCraftsman || null,
       };
       
-      // محاكاة عملية الحفظ - يمكن استبدالها بحفظ حقيقي في Supabase
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Insert the job into the database
+      const { data, error } = await supabase
+        .from('jobs')
+        .insert(jobData)
+        .select()
+        .single();
       
-      // Process form submission
+      if (error) {
+        throw error;
+      }
+      
       toast({
         title: "تم نشر المهمة بنجاح",
         description: "سيتم إشعار الصنايعية المتخصصين بمهمتك الجديدة",
       });
       
-      // إعادة التوجيه إلى صفحة المهام
+      // Redirect to jobs page
       navigate('/jobs');
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error posting job:", error);
       toast({
         title: "خطأ في النظام",
-        description: "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى",
+        description: error.message || "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى",
         variant: "destructive"
       });
     } finally {

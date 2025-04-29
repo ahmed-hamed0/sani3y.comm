@@ -50,6 +50,54 @@ export type Database = {
           },
         ]
       }
+      jobs: {
+        Row: {
+          address: string | null
+          budget_max: number | null
+          budget_min: number | null
+          category: string
+          city: string
+          client_id: string
+          craftsman_id: string | null
+          created_at: string
+          description: string
+          governorate: string
+          id: string
+          status: string
+          title: string
+        }
+        Insert: {
+          address?: string | null
+          budget_max?: number | null
+          budget_min?: number | null
+          category: string
+          city: string
+          client_id: string
+          craftsman_id?: string | null
+          created_at?: string
+          description: string
+          governorate: string
+          id?: string
+          status?: string
+          title: string
+        }
+        Update: {
+          address?: string | null
+          budget_max?: number | null
+          budget_min?: number | null
+          category?: string
+          city?: string
+          client_id?: string
+          craftsman_id?: string | null
+          created_at?: string
+          description?: string
+          governorate?: string
+          id?: string
+          status?: string
+          title?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
