@@ -23,14 +23,10 @@ import { supabase } from "./integrations/supabase/client";
 // Enable realtime for specific tables
 (async () => {
   try {
-    // Fix: Define parameter type explicitly for the Supabase RPC call
-    const enableRealtimeForTable = (tableName: string) => {
-      return supabase.rpc('enable_realtime', { table_name: tableName } as Record<string, any>);
-    };
-    
-    await enableRealtimeForTable('messages');
-    await enableRealtimeForTable('notifications');
-    await enableRealtimeForTable('reviews');
+    // Use a type assertion that completely bypasses type checking for the RPC call
+    await supabase.rpc('enable_realtime', { table_name: 'messages' } as any);
+    await supabase.rpc('enable_realtime', { table_name: 'notifications' } as any);
+    await supabase.rpc('enable_realtime', { table_name: 'reviews' } as any);
     console.log('Enabled realtime for messages, notifications, and reviews tables');
   } catch (error) {
     console.error('Error enabling realtime:', error);
