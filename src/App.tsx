@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -19,7 +20,7 @@ import ResetPassword from "./pages/ResetPassword";
 // Import supabase client
 import { supabase } from "./integrations/supabase/client";
 
-// Enable realtime using a different approach (without type parameters)
+// Enable realtime using a different approach (with type assertion)
 (async () => {
   try {
     await supabase.rpc('enable_realtime', { table_name: 'messages' } as any);
