@@ -17,16 +17,17 @@ import About from "./pages/About";
 import Profile from "./pages/Profile";
 import ResetPassword from "./pages/ResetPassword";
 
-// Enable realtime for both messages and notifications tables
-// This happens once when the app loads
+// Import supabase client
 import { supabase } from "./integrations/supabase/client";
 
 // Initialize realtime
 (async () => {
   try {
+    // We'll use RPC functions without type parameters to avoid TypeScript errors
     await supabase.rpc('enable_realtime', { table_name: 'messages' });
     await supabase.rpc('enable_realtime', { table_name: 'notifications' });
-    console.log('Enabled realtime for messages and notifications tables');
+    await supabase.rpc('enable_realtime', { table_name: 'reviews' });
+    console.log('Enabled realtime for messages, notifications, and reviews tables');
   } catch (error) {
     console.error('Error enabling realtime:', error);
   }

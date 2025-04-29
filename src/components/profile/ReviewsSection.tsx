@@ -38,48 +38,54 @@ const ReviewsSection = ({ profile }: ReviewsSectionProps) => {
       if (!profile.id) return;
       
       try {
-        const { data, error } = await supabase
+        // First, fetch the reviews
+        const { data: reviewsData, error: reviewsError } = await supabase
           .from('reviews')
-          .select(`
-            id, 
-            reviewer_id, 
-            reviewed_id, 
-            rating, 
-            comment, 
-            created_at,
-            profiles!reviewer_profile(full_name)
-          `)
+          .select('*')
           .eq('reviewed_id', profile.id)
           .order('created_at', { ascending: false });
 
-        if (error) {
-          console.error('Error loading reviews:', error);
+        if (reviewsError) {
+          console.error('Error loading reviews:', reviewsError);
           return;
         }
 
-        if (data) {
-          // Format reviews with reviewer names
-          const formattedReviews = data.map(review => ({
-            ...review,
-            reviewer_name: review.profiles?.full_name || 'مستخدم'
-          }));
-          
-          setReviews(formattedReviews);
-          
-          // Calculate average rating
-          if (formattedReviews.length > 0) {
-            const sum = formattedReviews.reduce((acc, review) => acc + review.rating, 0);
-            setAverageRating(parseFloat((sum / formattedReviews.length).toFixed(1)));
-          }
-          
-          // Check if current user has already submitted a review
-          if (user?.id) {
-            const userExistingReview = formattedReviews.find(r => r.reviewer_id === user.id);
-            if (userExistingReview) {
-              setUserReview(userExistingReview);
-              setComment(userExistingReview.comment);
-              setRating(userExistingReview.rating);
-            }
+        if (!reviewsData) {
+          setReviews([]);
+          return;
+        }
+
+        // Then, for each review, fetch the reviewer's name
+        const reviewsWithNames = await Promise.all(
+          reviewsData.map(async (review) => {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('full_name')
+              .eq('id', review.reviewer_id)
+              .single();
+
+            return {
+              ...review,
+              reviewer_name: profileData?.full_name || 'مستخدم'
+            };
+          })
+        );
+        
+        setReviews(reviewsWithNames);
+        
+        // Calculate average rating
+        if (reviewsWithNames.length > 0) {
+          const sum = reviewsWithNames.reduce((acc, review) => acc + review.rating, 0);
+          setAverageRating(parseFloat((sum / reviewsWithNames.length).toFixed(1)));
+        }
+        
+        // Check if current user has already submitted a review
+        if (user?.id) {
+          const userExistingReview = reviewsWithNames.find(r => r.reviewer_id === user.id);
+          if (userExistingReview) {
+            setUserReview(userExistingReview);
+            setComment(userExistingReview.comment || '');
+            setRating(userExistingReview.rating);
           }
         }
       } catch (error) {
@@ -110,7 +116,7 @@ const ReviewsSection = ({ profile }: ReviewsSectionProps) => {
         reviewer_id: user.id,
         reviewed_id: profile.id,
         rating,
-        comment: comment.trim()
+        comment: comment.trim() || null
       };
       
       let result;
@@ -121,7 +127,7 @@ const ReviewsSection = ({ profile }: ReviewsSectionProps) => {
           .from('reviews')
           .update({
             rating,
-            comment: comment.trim()
+            comment: comment.trim() || null
           })
           .eq('id', userReview.id);
       } else {
@@ -141,36 +147,39 @@ const ReviewsSection = ({ profile }: ReviewsSectionProps) => {
       toast((userReview ? "تم تحديث" : "تم إنشاء") + " التقييم بنجاح");
       
       // Reload reviews to reflect the changes
-      const { data } = await supabase
+      const { data: updatedReviewsData } = await supabase
         .from('reviews')
-        .select(`
-          id, 
-          reviewer_id, 
-          reviewed_id, 
-          rating, 
-          comment, 
-          created_at,
-          profiles!reviewer_profile(full_name)
-        `)
+        .select('*')
         .eq('reviewed_id', profile.id)
         .order('created_at', { ascending: false });
         
-      if (data) {
-        const formattedReviews = data.map(review => ({
-          ...review,
-          reviewer_name: review.profiles?.full_name || 'مستخدم'
-        }));
+      if (updatedReviewsData) {
+        // Then, for each review, fetch the reviewer's name
+        const reviewsWithNames = await Promise.all(
+          updatedReviewsData.map(async (review) => {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('full_name')
+              .eq('id', review.reviewer_id)
+              .single();
+
+            return {
+              ...review,
+              reviewer_name: profileData?.full_name || 'مستخدم'
+            };
+          })
+        );
         
-        setReviews(formattedReviews);
+        setReviews(reviewsWithNames);
         
         // Update average rating
-        if (formattedReviews.length > 0) {
-          const sum = formattedReviews.reduce((acc, review) => acc + review.rating, 0);
-          setAverageRating(parseFloat((sum / formattedReviews.length).toFixed(1)));
+        if (reviewsWithNames.length > 0) {
+          const sum = reviewsWithNames.reduce((acc, review) => acc + review.rating, 0);
+          setAverageRating(parseFloat((sum / reviewsWithNames.length).toFixed(1)));
         }
         
         // Update user's review in state
-        const updatedUserReview = formattedReviews.find(r => r.reviewer_id === user.id);
+        const updatedUserReview = reviewsWithNames.find(r => r.reviewer_id === user.id);
         if (updatedUserReview) {
           setUserReview(updatedUserReview);
         }
