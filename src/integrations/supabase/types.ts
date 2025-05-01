@@ -50,6 +50,51 @@ export type Database = {
           },
         ]
       }
+      job_applications: {
+        Row: {
+          budget: number | null
+          craftsman_id: string
+          id: string
+          job_id: string
+          proposal: string
+          status: string
+          submitted_at: string
+        }
+        Insert: {
+          budget?: number | null
+          craftsman_id: string
+          id?: string
+          job_id: string
+          proposal: string
+          status?: string
+          submitted_at?: string
+        }
+        Update: {
+          budget?: number | null
+          craftsman_id?: string
+          id?: string
+          job_id?: string
+          proposal?: string
+          status?: string
+          submitted_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_applications_craftsman_id_fkey"
+            columns: ["craftsman_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_applications_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       jobs: {
         Row: {
           address: string | null

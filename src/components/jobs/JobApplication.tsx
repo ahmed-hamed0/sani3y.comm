@@ -37,13 +37,15 @@ const JobApplication = ({ jobId, isOpen, onClose, onSuccess }: JobApplicationPro
     try {
       setIsSubmitting(true);
 
-      // Check if user already applied to this job
-      const { data: existingApplication } = await supabase
-        .from('job_applications')
-        .select('id')
-        .eq('job_id', jobId)
-        .eq('craftsman_id', user.id)
+      // Check if user already applied to this job using raw SQL query
+      const { data: existingApplications, error: checkError } = await supabase
+        .rpc('check_job_application', {
+          p_job_id: jobId,
+          p_craftsman_id: user.id
+        })
         .single();
+
+      const existingApplication = existingApplications?.exists || false;
 
       if (existingApplication) {
         toast.error('لقد قمت بالتقديم على هذه المهمة من قبل');
@@ -52,14 +54,16 @@ const JobApplication = ({ jobId, isOpen, onClose, onSuccess }: JobApplicationPro
       }
 
       // Submit application
-      const { error } = await supabase.from('job_applications').insert({
-        job_id: jobId,
-        craftsman_id: user.id,
-        proposal,
-        budget: budget ? parseInt(budget) : null,
-        status: 'pending',
-        submitted_at: new Date().toISOString()
-      });
+      const { error } = await supabase
+        .from('job_applications')
+        .insert({
+          job_id: jobId,
+          craftsman_id: user.id,
+          proposal,
+          budget: budget ? parseInt(budget) : null,
+          status: 'pending',
+          submitted_at: new Date().toISOString()
+        });
 
       if (error) {
         console.error('Error submitting application:', error);

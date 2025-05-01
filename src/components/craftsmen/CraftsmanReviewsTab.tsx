@@ -37,7 +37,7 @@ export const CraftsmanReviewsTab = ({ craftsman }: CraftsmanReviewsTabProps) => 
             comment,
             created_at,
             reviewer_id,
-            profiles:reviewer_id (
+            profiles:profiles!reviewer_id(
               full_name,
               avatar_url
             )

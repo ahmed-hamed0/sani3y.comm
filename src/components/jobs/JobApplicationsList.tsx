@@ -43,26 +43,7 @@ const JobApplicationsList = ({ jobId, isMyJob }: JobApplicationsListProps) => {
         setLoading(true);
         
         const { data, error } = await supabase
-          .from('job_applications')
-          .select(`
-            id,
-            proposal,
-            budget,
-            status,
-            submitted_at,
-            craftsman_id,
-            profiles:craftsman_id (
-              id,
-              full_name,
-              avatar_url,
-              rating,
-              craftsman_details:craftsman_details (
-                specialty
-              )
-            )
-          `)
-          .eq('job_id', jobId)
-          .order('submitted_at', { ascending: false });
+          .rpc('get_job_applications', { p_job_id: jobId });
           
         if (error) {
           console.error('Error fetching applications:', error);
@@ -70,18 +51,18 @@ const JobApplicationsList = ({ jobId, isMyJob }: JobApplicationsListProps) => {
         }
         
         if (data) {
-          const formattedApplications = data.map(app => ({
+          const formattedApplications = data.map((app: any) => ({
             id: app.id,
             proposal: app.proposal,
             budget: app.budget,
             status: app.status,
             submittedAt: new Date(app.submitted_at),
             craftsman: {
-              id: app.profiles?.id,
-              name: app.profiles?.full_name || 'صنايعي غير معروف',
-              avatar: app.profiles?.avatar_url,
-              specialty: app.profiles?.craftsman_details?.specialty || 'تخصص غير محدد',
-              rating: app.profiles?.rating || 0
+              id: app.craftsman_id,
+              name: app.craftsman_name || 'صنايعي غير معروف',
+              avatar: app.craftsman_avatar,
+              specialty: app.craftsman_specialty || 'تخصص غير محدد',
+              rating: app.craftsman_rating || 0
             }
           }));
           
@@ -156,7 +137,7 @@ const JobApplicationsList = ({ jobId, isMyJob }: JobApplicationsListProps) => {
         .from('messages')
         .insert({
           content: message.trim(),
-          sender_id: isMyJob ? (await supabase.auth.getUser()).data.user?.id : selectedApplication.craftsman.id,
+          sender_id: (await supabase.auth.getUser()).data.user?.id,
           receiver_id: selectedApplication.craftsman.id,
           read: false
         });
