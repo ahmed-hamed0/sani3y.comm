@@ -7,6 +7,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Spinner } from '@/components/ui/spinner';
 import { Clock, Calendar, MapPin } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import JobApplication from '@/components/jobs/JobApplication';
+import JobApplicationsList from '@/components/jobs/JobApplicationsList';
 
 interface Job {
   id: string;
@@ -35,6 +37,8 @@ const JobDetails = () => {
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isApplicationDialogOpen, setIsApplicationDialogOpen] = useState(false);
+  const [hasApplied, setHasApplied] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -110,6 +114,18 @@ const JobDetails = () => {
         };
 
         setJob(formattedJob);
+
+        // Check if current user has applied to this job
+        if (user && user.role === 'craftsman') {
+          const { data: applicationData } = await supabase
+            .from('job_applications')
+            .select('id')
+            .eq('job_id', id)
+            .eq('craftsman_id', user.id)
+            .maybeSingle();
+          
+          setHasApplied(!!applicationData);
+        }
       } catch (err) {
         console.error('Error in fetchJobDetails:', err);
         setError('حدث خطأ غير متوقع');
@@ -119,7 +135,11 @@ const JobDetails = () => {
     };
 
     fetchJobDetails();
-  }, [id]);
+  }, [id, user]);
+
+  const handleApplicationSubmit = () => {
+    setHasApplied(true);
+  };
 
   // Helper function to format date
   const formatDate = (date: Date) => {
@@ -159,6 +179,7 @@ const JobDetails = () => {
   }
 
   const isMine = user?.id === job.client.id;
+  const isCraftsman = user?.role === 'craftsman';
   const isOpen = job.status === 'open';
 
   return (
@@ -231,14 +252,26 @@ const JobDetails = () => {
                 </div>
               ) : (
                 <div className="flex justify-center mt-6">
-                  {isOpen ? (
-                    <Button className="min-w-[200px]">تقدم للمهمة</Button>
+                  {isOpen && isCraftsman ? (
+                    hasApplied ? (
+                      <Button disabled>تم التقديم بالفعل</Button>
+                    ) : (
+                      <Button 
+                        className="min-w-[200px]"
+                        onClick={() => setIsApplicationDialogOpen(true)}
+                      >
+                        تقدم للمهمة
+                      </Button>
+                    )
                   ) : (
                     <Button disabled>تم إغلاق المهمة</Button>
                   )}
                 </div>
               )}
             </div>
+            
+            {/* Display job applications for the client */}
+            <JobApplicationsList jobId={job.id} isMyJob={isMine} />
           </div>
           
           {/* Client Info */}
@@ -270,6 +303,14 @@ const JobDetails = () => {
           </div>
         </div>
       </div>
+      
+      {/* Application Dialog */}
+      <JobApplication 
+        jobId={job.id}
+        isOpen={isApplicationDialogOpen}
+        onClose={() => setIsApplicationDialogOpen(false)}
+        onSuccess={handleApplicationSubmit}
+      />
     </MainLayout>
   );
 };

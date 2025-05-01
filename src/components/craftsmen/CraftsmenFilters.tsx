@@ -18,7 +18,7 @@ const CraftsmenFilters = ({ onFilterChange }: CraftsmenFiltersProps) => {
   const [category, setCategory] = useState('');
   const [governorate, setGovernorate] = useState('');
   const [city, setCity] = useState('');
-  const [rating, setRating] = useState([1]);
+  const [rating, setRating] = useState([0]); // Changed from 1 to 0
   
   // Get cities based on selected governorate
   const cities = GOVERNORATES.find(g => g.name === governorate)?.cities || [];
@@ -39,7 +39,7 @@ const CraftsmenFilters = ({ onFilterChange }: CraftsmenFiltersProps) => {
     setCategory('');
     setGovernorate('');
     setCity('');
-    setRating([1]);
+    setRating([0]); // Changed from 1 to 0
     onFilterChange({});
   };
 
@@ -140,7 +140,7 @@ const CraftsmenFilters = ({ onFilterChange }: CraftsmenFiltersProps) => {
             <Label htmlFor="rating" className="mb-6 block">الحد الأدنى للتقييم: {rating[0]}</Label>
             <Slider
               id="rating"
-              min={1}
+              min={0} // Changed from 1 to 0
               max={5}
               step={1}
               value={rating}
