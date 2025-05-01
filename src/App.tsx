@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider, RequireAuth, RequireClient, RequireCraftsman } from "@/hooks/useAuth";
+import { AuthProvider, RequireAuth } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Craftsmen from "./pages/Craftsmen";
@@ -24,11 +24,10 @@ import { supabase } from "./integrations/supabase/client";
 // Enable realtime for specific tables
 (async () => {
   try {
-    // Use type casting to bypass type checking for the RPC calls
-    await supabase.rpc('enable_realtime', { table_name: 'messages' } as any);
-    await supabase.rpc('enable_realtime', { table_name: 'notifications' } as any);
-    await supabase.rpc('enable_realtime', { table_name: 'reviews' } as any);
-    await supabase.rpc('enable_realtime', { table_name: 'jobs' } as any);
+    await supabase.rpc('enable_realtime', { table_name: 'messages' });
+    await supabase.rpc('enable_realtime', { table_name: 'notifications' });
+    await supabase.rpc('enable_realtime', { table_name: 'reviews' });
+    await supabase.rpc('enable_realtime', { table_name: 'jobs' });
     console.log('Enabled realtime for messages, notifications, reviews, and jobs tables');
   } catch (error) {
     console.error('Error enabling realtime:', error);

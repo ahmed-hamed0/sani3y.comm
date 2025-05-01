@@ -93,7 +93,7 @@ const JobDetails = () => {
             address: data.address
           },
           client: {
-            id: data.profiles?.id,
+            id: data.profiles?.id || '',
             name: data.profiles?.full_name || 'مستخدم غير معروف',
             avatar: data.profiles?.avatar_url
           },
