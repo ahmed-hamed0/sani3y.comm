@@ -16,6 +16,7 @@ import SignUp from "./pages/SignUp";
 import About from "./pages/About";
 import Profile from "./pages/Profile";
 import ResetPassword from "./pages/ResetPassword";
+import JobDetails from "./pages/JobDetails";
 
 // Import supabase client
 import { supabase } from "./integrations/supabase/client";
@@ -23,7 +24,7 @@ import { supabase } from "./integrations/supabase/client";
 // Enable realtime for specific tables
 (async () => {
   try {
-    // Use a type assertion that completely bypasses type checking for the RPC call
+    // Use type casting to bypass type checking for the RPC calls
     await supabase.rpc('enable_realtime', { table_name: 'messages' } as any);
     await supabase.rpc('enable_realtime', { table_name: 'notifications' } as any);
     await supabase.rpc('enable_realtime', { table_name: 'reviews' } as any);
@@ -48,6 +49,7 @@ const App = () => (
             <Route path="/craftsmen" element={<Craftsmen />} />
             <Route path="/craftsman/:id" element={<CraftsmanDetails />} />
             <Route path="/jobs" element={<Jobs />} />
+            <Route path="/job/:id" element={<JobDetails />} />
             <Route path="/post-job" element={<PostJob />} />
             <Route path="/profile" element={
               <RequireAuth>
