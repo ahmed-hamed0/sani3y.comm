@@ -82,7 +82,7 @@ const CraftsmenFilters = ({ onFilterChange }: CraftsmenFiltersProps) => {
                 <SelectValue placeholder="جميع التخصصات" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">جميع التخصصات</SelectItem>
+                <SelectItem value="all">جميع التخصصات</SelectItem>
                 {CATEGORIES.map(cat => (
                   <SelectItem key={cat.id} value={cat.name}>
                     {cat.name}
@@ -105,7 +105,7 @@ const CraftsmenFilters = ({ onFilterChange }: CraftsmenFiltersProps) => {
                 <SelectValue placeholder="جميع المحافظات" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">جميع المحافظات</SelectItem>
+                <SelectItem value="all">جميع المحافظات</SelectItem>
                 {GOVERNORATES.map(gov => (
                   <SelectItem key={gov.id} value={gov.name}>
                     {gov.name}
@@ -126,7 +126,7 @@ const CraftsmenFilters = ({ onFilterChange }: CraftsmenFiltersProps) => {
                 <SelectValue placeholder={!governorate ? "اختر المحافظة أولاً" : "جميع المدن"} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">جميع المدن</SelectItem>
+                <SelectItem value="all">جميع المدن</SelectItem>
                 {cities.map(c => (
                   <SelectItem key={c} value={c}>
                     {c}
