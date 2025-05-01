@@ -5,7 +5,7 @@ import MainLayout from '@/components/layouts/MainLayout';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { Spinner } from '@/components/ui/spinner';
-import { Clock, Calendar, MapPin, User, BriefcaseBusiness } from 'lucide-react';
+import { Clock, Calendar, MapPin } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 interface Job {
@@ -45,7 +45,8 @@ const JobDetails = () => {
       try {
         setLoading(true);
 
-        const { data, error } = await supabase
+        // Fetch job data and client profile in separate queries
+        const { data: jobData, error: jobError } = await supabase
           .from('jobs')
           .select(`
             id,
@@ -59,46 +60,53 @@ const JobDetails = () => {
             address,
             status,
             created_at,
-            client_id,
-            profiles:client_id (
-              id,
-              full_name,
-              avatar_url
-            )
+            client_id
           `)
           .eq('id', id)
           .single();
 
-        if (error) {
-          console.error('Error fetching job details:', error);
+        if (jobError) {
+          console.error('Error fetching job details:', jobError);
           setError('حدث خطأ أثناء تحميل بيانات المهمة');
           return;
         }
 
-        if (!data) {
+        if (!jobData) {
           setError('لم يتم العثور على المهمة');
           return;
         }
 
+        // Fetch client profile data separately
+        const { data: clientData, error: clientError } = await supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url')
+          .eq('id', jobData.client_id)
+          .single();
+
+        if (clientError) {
+          console.error('Error fetching client profile:', clientError);
+          // Continue with job data even if client data is missing
+        }
+
         const formattedJob: Job = {
-          id: data.id,
-          title: data.title,
-          description: data.description,
-          category: data.category,
-          budget_min: data.budget_min,
-          budget_max: data.budget_max,
+          id: jobData.id,
+          title: jobData.title,
+          description: jobData.description,
+          category: jobData.category,
+          budget_min: jobData.budget_min,
+          budget_max: jobData.budget_max,
           location: {
-            governorate: data.governorate,
-            city: data.city,
-            address: data.address
+            governorate: jobData.governorate,
+            city: jobData.city,
+            address: jobData.address
           },
           client: {
-            id: data.profiles?.id || '',
-            name: data.profiles?.full_name || 'مستخدم غير معروف',
-            avatar: data.profiles?.avatar_url
+            id: clientData?.id || jobData.client_id,
+            name: clientData?.full_name || 'مستخدم غير معروف',
+            avatar: clientData?.avatar_url
           },
-          status: data.status as 'open' | 'assigned' | 'completed',
-          postedAt: new Date(data.created_at)
+          status: jobData.status as 'open' | 'assigned' | 'completed',
+          postedAt: new Date(jobData.created_at)
         };
 
         setJob(formattedJob);

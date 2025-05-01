@@ -24,10 +24,10 @@ import { supabase } from "./integrations/supabase/client";
 // Enable realtime for specific tables
 (async () => {
   try {
-    await supabase.rpc('enable_realtime', { table_name: 'messages' });
-    await supabase.rpc('enable_realtime', { table_name: 'notifications' });
-    await supabase.rpc('enable_realtime', { table_name: 'reviews' });
-    await supabase.rpc('enable_realtime', { table_name: 'jobs' });
+    await supabase.channel('public:messages').subscribe();
+    await supabase.channel('public:notifications').subscribe();
+    await supabase.channel('public:reviews').subscribe();
+    await supabase.channel('public:jobs').subscribe();
     console.log('Enabled realtime for messages, notifications, reviews, and jobs tables');
   } catch (error) {
     console.error('Error enabling realtime:', error);

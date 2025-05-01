@@ -18,4 +18,6 @@ export interface Craftsman {
   availability: boolean;
   createdAt: Date;
   phone: string;
+  email?: string;
+  role?: string;
 }
