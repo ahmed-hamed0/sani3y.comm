@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -29,7 +28,7 @@ export function CraftsmanReviewsTab({ craftsmanId }: CraftsmanReviewsTabProps) {
   useEffect(() => {
     const fetchReviews = async () => {
       try {
-        // Fix: Remove type parameter and use type assertion on the result
+        // Fix: Call RPC function without specifying type parameter
         const { data, error } = await supabase
           .rpc('get_craftsman_reviews', { p_craftsman_id: craftsmanId })
           .order('created_at', { ascending: false });

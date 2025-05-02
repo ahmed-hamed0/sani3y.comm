@@ -106,7 +106,7 @@ const JobDetails = () => {
           
           // Check if the user has already applied
           if (isCraftsman) {
-            // Fix: Remove generic parameters and use type assertion for the result
+            // Fix: Remove type parameters and use correct parameter names
             const { data: checkData, error: appError } = await supabase
               .rpc("check_job_application", { 
                 p_craftsman_id: user.id,

@@ -110,11 +110,11 @@ export function JobApplication({
 
     setIsSubmitting(true);
     try {
-      // Fix: Remove generic parameters and use type assertion for the result
+      // Fix: Remove type parameter and use proper params object with correct types
       const { data: checkData, error: checkError } = await supabase
         .rpc("check_job_application", {
           p_craftsman_id: user.id,
-          p_job_id: jobId,
+          p_job_id: jobId
         });
 
       if (checkError) throw checkError;
