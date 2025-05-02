@@ -42,9 +42,11 @@ interface JobApplication {
 interface JobData {
   id: string;
   title: string;
-  client: {
-    id: string;
-  };
+  client_id: string;
+}
+
+interface ApplicationCheckResponse {
+  exists: boolean;
 }
 
 export function JobApplicationsList({ jobId, isMyJob, onRefreshNeeded }: JobApplicationsListProps) {
@@ -57,14 +59,20 @@ export function JobApplicationsList({ jobId, isMyJob, onRefreshNeeded }: JobAppl
   useEffect(() => {
     const fetchApplications = async () => {
       try {
-        const { data: job, error: jobError } = await supabase
+        const { data: jobInfo, error: jobError } = await supabase
           .from("jobs")
-          .select("*, client:profiles(*)")
+          .select("id, title, client_id")
           .eq("id", jobId)
           .single();
         
         if (jobError) throw jobError;
-        setJobData(job);
+        if (jobInfo) {
+          setJobData({
+            id: jobInfo.id,
+            title: jobInfo.title,
+            client_id: jobInfo.client_id
+          });
+        }
 
         const { data, error } = await supabase
           .rpc("get_job_applications", { job_id_param: jobId })

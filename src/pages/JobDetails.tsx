@@ -34,6 +34,10 @@ interface JobDetails {
   assigned_craftsman?: any;
 }
 
+interface ApplicationCheckResponse {
+  exists: boolean;
+}
+
 const getStatusBadge = (status: JobStatus) => {
   switch (status) {
     case 'open':
@@ -66,7 +70,7 @@ const getStatusIcon = (status: JobStatus) => {
 
 const JobDetails = () => {
   const { id } = useParams<{ id: string }>();
-  const { user, isClient: userIsClient, isCraftsman, loading: authLoading } = useAuth();
+  const { user, isCraftsman, loading: authLoading } = useAuth();
   const { toast } = useToast();
   
   const [job, setJob] = useState<JobDetails | null>(null);
@@ -86,7 +90,7 @@ const JobDetails = () => {
           .select(`
             *,
             client:profiles!jobs_client_id_fkey(*), 
-            assigned_craftsman:profiles!jobs_assigned_to_fkey(*)
+            assigned_craftsman:profiles!jobs_craftsman_id_fkey(*)
           `)
           .eq('id', id)
           .single();
@@ -102,14 +106,14 @@ const JobDetails = () => {
           
           // Check if the user has already applied
           if (isCraftsman) {
-            const { data: appData, error: appError } = await supabase
-              .rpc("check_job_application", { 
+            const { data: checkData, error: appError } = await supabase
+              .rpc<ApplicationCheckResponse>("check_job_application", { 
                 craftsman_id_param: user.id,
                 job_id_param: id
               });
             
             if (appError) throw appError;
-            setHasApplied(appData && Array.isArray(appData) && appData.length > 0);
+            setHasApplied(checkData && checkData.exists);
           }
         }
       } catch (error) {
@@ -226,7 +230,6 @@ const JobDetails = () => {
   const isOpenJob = job.status === 'open';
   const isInProgressJob = job.status === 'in_progress';
   const isCompletedJob = job.status === 'completed';
-  // Use the job object directly to check if the current user is the client
   const canApply = isCraftsman && isOpenJob && !hasApplied && !isMyJob;
 
   return (

@@ -17,10 +17,9 @@ interface ReviewData {
   rating: number;
   comment: string;
   created_at: string;
-  reviewer: {
-    full_name?: string;
-    avatar_url?: string;
-  };
+  reviewer_id: string;
+  reviewer_name?: string;
+  reviewer_avatar?: string;
 }
 
 export function CraftsmanReviewsTab({ craftsmanId }: CraftsmanReviewsTabProps) {
@@ -73,13 +72,13 @@ export function CraftsmanReviewsTab({ craftsmanId }: CraftsmanReviewsTabProps) {
             <div className="flex justify-between items-start mb-4">
               <div className="flex items-center gap-3">
                 <Avatar>
-                  <AvatarImage src={review.reviewer?.avatar_url || ""} />
+                  <AvatarImage src={review.reviewer_avatar || ""} />
                   <AvatarFallback>
-                    {review.reviewer?.full_name?.[0] || "R"}
+                    {review.reviewer_name?.[0] || "R"}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h3 className="font-medium">{review.reviewer?.full_name || "عميل"}</h3>
+                  <h3 className="font-medium">{review.reviewer_name || "عميل"}</h3>
                   <p className="text-sm text-muted-foreground">
                     {review.created_at ? formatDistanceToNow(parseISO(review.created_at), { 
                       addSuffix: true, 

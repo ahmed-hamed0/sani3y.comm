@@ -55,14 +55,14 @@ const SignUpForm = ({ initialRole = 'client' }: SignUpFormProps) => {
     setStep(1);
   };
   
-  const goToCraftsmanDetails = async (e: React.FormEvent) => {
+  const goToCraftsmanDetails = (e: React.FormEvent) => {
     e.preventDefault();
     const step2Fields = ['governorate', 'city', 'agreeTerms'];
-    const step2Result = await form.trigger(step2Fields as any);
-    
-    if (step2Result) {
-      setStep(3);
-    }
+    form.trigger(step2Fields as any).then((step2Result) => {
+      if (step2Result) {
+        setStep(3);
+      }
+    });
   };
 
   const onSubmit = async (values: RegisterFormValues) => {

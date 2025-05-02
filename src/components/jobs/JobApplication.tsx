@@ -50,6 +50,10 @@ interface JobData {
   };
 }
 
+interface ApplicationCheckResponse {
+  exists: boolean;
+}
+
 export function JobApplication({
   jobId, 
   isOpen,
@@ -75,12 +79,20 @@ export function JobApplication({
         try {
           const { data, error } = await supabase
             .from("jobs")
-            .select("*, client:profiles(*)")
+            .select("id, title, client_id")
             .eq("id", jobId)
             .single();
 
           if (error) throw error;
-          setJobData(data);
+          if (data) {
+            setJobData({
+              id: data.id,
+              title: data.title,
+              client: {
+                id: data.client_id
+              }
+            });
+          }
         } catch (error) {
           console.error("Error fetching job details:", error);
         }
@@ -103,16 +115,16 @@ export function JobApplication({
     setIsSubmitting(true);
     try {
       // التحقق من وجود تقديم سابق
-      const { data: existingApplication, error: checkError } = await supabase
-        .rpc("check_job_application", {
+      const { data: checkData, error: checkError } = await supabase
+        .rpc<ApplicationCheckResponse>("check_job_application", {
           craftsman_id_param: user.id,
           job_id_param: jobId,
         });
 
       if (checkError) throw checkError;
 
-      // TypeScript fix - check if existingApplication exists
-      if (existingApplication && Array.isArray(existingApplication) && existingApplication.length > 0) {
+      // Check if application exists
+      if (checkData && checkData.exists) {
         toast({
           title: "لا يمكن التقديم",
           description: "لقد قدمت عرضاً بالفعل على هذه المهمة",
