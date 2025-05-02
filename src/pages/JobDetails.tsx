@@ -106,7 +106,7 @@ const JobDetails = () => {
           
           // Check if the user has already applied
           if (isCraftsman) {
-            // Fix: Remove type parameters and use correct parameter names
+            // Fix: Properly type the result of the RPC call
             const { data: checkData, error: appError } = await supabase
               .rpc("check_job_application", { 
                 p_craftsman_id: user.id,
@@ -458,7 +458,7 @@ const JobDetails = () => {
                 <CardDescription className="text-gray-600 text-xs">
                   <ul className="list-disc pr-4 space-y-1">
                     <li>قم بالتواصل مع الصنايعية عبر المنصة فقط</li>
-                    <li>لا تقم بالدفع قبل اكتمال العمل والتأكد من جودته</li>
+                    <li>لا تقم بال��فع قبل اكتمال العمل والتأكد من جودته</li>
                     <li>احرص على مراجعة تقييمات الصنايعية قبل قبول العروض</li>
                   </ul>
                 </CardDescription>

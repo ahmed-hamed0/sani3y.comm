@@ -69,7 +69,7 @@ export function JobApplicationsList({ jobId, isMyJob, onRefreshNeeded }: JobAppl
           });
         }
 
-        // Fix: Remove type parameter and use correct parameter name
+        // Fix: Properly type the result of the RPC call 
         const { data, error } = await supabase
           .rpc("get_job_applications", { job_id_param: jobId })
           .order("created_at", { ascending: false });

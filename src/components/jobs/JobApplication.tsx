@@ -110,7 +110,7 @@ export function JobApplication({
 
     setIsSubmitting(true);
     try {
-      // Fix: Remove type parameter and use proper params object with correct types
+      // Fix: Properly type the result of the RPC call
       const { data: checkData, error: checkError } = await supabase
         .rpc("check_job_application", {
           p_craftsman_id: user.id,
@@ -119,7 +119,7 @@ export function JobApplication({
 
       if (checkError) throw checkError;
 
-      // Check if application exists with proper type assertion
+      // Fix: Use proper type assertion for the application check result
       const typedCheckData = checkData as ApplicationCheckResult;
       if (typedCheckData && typedCheckData.exists) {
         toast({
