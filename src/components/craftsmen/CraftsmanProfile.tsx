@@ -62,7 +62,7 @@ const CraftsmanProfile = () => {
           </TabsContent>
           
           <TabsContent value="reviews" className="md:col-span-3">
-            <CraftsmanReviewsTab craftsman={craftsman} />
+            <CraftsmanReviewsTab craftsmanId={craftsman.id} />
           </TabsContent>
         </div>
       </Tabs>

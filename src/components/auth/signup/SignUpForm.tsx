@@ -130,7 +130,7 @@ const SignUpForm = ({ initialRole = 'client' }: SignUpFormProps) => {
             role={role}
             isLoading={isLoading}
             onPrevStep={handlePrevStep}
-            onNextStep={role === 'craftsman' ? (e) => goToCraftsmanDetails(e) : undefined}
+            onNextStep={role === 'craftsman' ? goToCraftsmanDetails : undefined}
           />
         ) : (
           <CraftsmanDetailsStep

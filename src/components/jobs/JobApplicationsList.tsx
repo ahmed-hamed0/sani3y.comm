@@ -25,12 +25,34 @@ export interface JobApplicationsListProps {
   onRefreshNeeded?: () => void;
 }
 
+interface JobApplication {
+  id: string;
+  status: string;
+  created_at: string;
+  budget: number;
+  proposal: string;
+  craftsman: {
+    id: string;
+    full_name?: string;
+    avatar_url?: string;
+    specialty?: string;
+  };
+}
+
+interface JobData {
+  id: string;
+  title: string;
+  client: {
+    id: string;
+  };
+}
+
 export function JobApplicationsList({ jobId, isMyJob, onRefreshNeeded }: JobApplicationsListProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [applications, setApplications] = useState<any[]>([]);
+  const [applications, setApplications] = useState<JobApplication[]>([]);
   const [loading, setLoading] = useState(true);
-  const [jobData, setJobData] = useState<any>(null);
+  const [jobData, setJobData] = useState<JobData | null>(null);
 
   useEffect(() => {
     const fetchApplications = async () => {
@@ -49,7 +71,7 @@ export function JobApplicationsList({ jobId, isMyJob, onRefreshNeeded }: JobAppl
           .order("created_at", { ascending: false });
 
         if (error) throw error;
-        setApplications(data as any[] || []);
+        setApplications(data as JobApplication[] || []);
       } catch (error) {
         console.error("Error fetching applications:", error);
         toast({
@@ -80,7 +102,7 @@ export function JobApplicationsList({ jobId, isMyJob, onRefreshNeeded }: JobAppl
       // تحديث حالة الوظيفة إلى قيد التنفيذ
       const { error: jobUpdateError } = await supabase
         .from("jobs")
-        .update({ status: "in_progress", assigned_to: craftsmanId })
+        .update({ status: "in_progress", craftsman_id: craftsmanId })
         .eq("id", jobId);
       
       if (jobUpdateError) throw jobUpdateError;
@@ -247,7 +269,7 @@ export function JobApplicationsList({ jobId, isMyJob, onRefreshNeeded }: JobAppl
                 variant="outline"
                 size="sm"
                 className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                onClick={() => handleReject(application.id, application.craftsman?.id, application.craftsman?.full_name)}
+                onClick={() => handleReject(application.id, application.craftsman?.id, application.craftsman?.full_name || "")}
               >
                 <X className="mr-1 h-4 w-4" />
                 رفض
@@ -255,7 +277,7 @@ export function JobApplicationsList({ jobId, isMyJob, onRefreshNeeded }: JobAppl
               <Button
                 size="sm"
                 className="bg-green-600 hover:bg-green-700"
-                onClick={() => handleAccept(application.id, application.craftsman?.id, application.craftsman?.full_name)}
+                onClick={() => handleAccept(application.id, application.craftsman?.id, application.craftsman?.full_name || "")}
               >
                 <Check className="mr-1 h-4 w-4" />
                 قبول

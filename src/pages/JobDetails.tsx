@@ -19,6 +19,21 @@ import { JobApplicationsList } from '@/components/jobs/JobApplicationsList';
 
 type JobStatus = 'open' | 'in_progress' | 'completed' | 'cancelled';
 
+interface JobDetails {
+  id: string;
+  title: string;
+  description: string;
+  status: JobStatus;
+  client_id: string;
+  craftsman_id?: string;
+  budget?: number;
+  governorate: string;
+  city?: string;
+  created_at: string;
+  client: any;
+  assigned_craftsman?: any;
+}
+
 const getStatusBadge = (status: JobStatus) => {
   switch (status) {
     case 'open':
@@ -51,10 +66,10 @@ const getStatusIcon = (status: JobStatus) => {
 
 const JobDetails = () => {
   const { id } = useParams<{ id: string }>();
-  const { user, isClient, isCraftsman, loading: authLoading } = useAuth();
+  const { user, isClient: userIsClient, isCraftsman, loading: authLoading } = useAuth();
   const { toast } = useToast();
   
-  const [job, setJob] = useState<any>(null);
+  const [job, setJob] = useState<JobDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -77,24 +92,24 @@ const JobDetails = () => {
           .single();
         
         if (error) throw error;
-        setJob(data);
+        setJob(data as JobDetails);
         
         if (user && data) {
           // Check if the current user is the assigned craftsman
-          if (data.assigned_to === user.id) {
+          if (data.craftsman_id === user.id) {
             setIsAssignedCraftsman(true);
           }
           
           // Check if the user has already applied
           if (isCraftsman) {
             const { data: appData, error: appError } = await supabase
-              .rpc('check_job_application', { 
+              .rpc("check_job_application", { 
                 craftsman_id_param: user.id,
                 job_id_param: id
               });
             
             if (appError) throw appError;
-            setHasApplied(appData && appData.length > 0);
+            setHasApplied(appData && Array.isArray(appData) && appData.length > 0);
           }
         }
       } catch (error) {
@@ -211,7 +226,7 @@ const JobDetails = () => {
   const isOpenJob = job.status === 'open';
   const isInProgressJob = job.status === 'in_progress';
   const isCompletedJob = job.status === 'completed';
-  // Removed duplicate isClient declaration - using the one from useAuth()
+  // Use the job object directly to check if the current user is the client
   const canApply = isCraftsman && isOpenJob && !hasApplied && !isMyJob;
 
   return (
@@ -257,7 +272,7 @@ const JobDetails = () => {
                     }) : ''}
                   </span>
                 </div>
-                {job.budget > 0 && (
+                {job.budget && job.budget > 0 && (
                   <div className="flex items-center text-primary font-medium">
                     <DollarSign className="w-4 h-4 ml-1" />
                     <span>{job.budget} جنيه</span>
@@ -266,7 +281,7 @@ const JobDetails = () => {
               </div>
             </div>
             <div className="flex flex-col items-end">
-              {getStatusBadge(job.status as JobStatus)}
+              {getStatusBadge(job.status)}
             </div>
           </div>
         </div>
@@ -310,7 +325,7 @@ const JobDetails = () => {
               </CardHeader>
               <CardContent>
                 <div className="flex flex-col items-center text-center">
-                  {getStatusIcon(job.status as JobStatus)}
+                  {getStatusIcon(job.status)}
                   <h3 className="mt-2 mb-1 font-semibold">
                     {
                       job.status === 'open' ? 'متاحة للتقديم' :
@@ -390,7 +405,7 @@ const JobDetails = () => {
             </Card>
             
             {/* Assigned Craftsman Card (if in progress) */}
-            {job.assigned_to && (
+            {job.craftsman_id && (
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle>الصنايعي المكلف</CardTitle>
@@ -418,7 +433,7 @@ const JobDetails = () => {
                     size="sm"
                     asChild
                   >
-                    <Link to={`/craftsman/${job.assigned_to}`} className="flex items-center">
+                    <Link to={`/craftsman/${job.craftsman_id}`} className="flex items-center">
                       <User className="ml-1 h-4 w-4" />
                       عرض الملف الشخصي
                     </Link>

@@ -12,8 +12,19 @@ export interface CraftsmanReviewsTabProps {
   craftsmanId: string;
 }
 
+interface ReviewData {
+  id: string;
+  rating: number;
+  comment: string;
+  created_at: string;
+  reviewer: {
+    full_name?: string;
+    avatar_url?: string;
+  };
+}
+
 export function CraftsmanReviewsTab({ craftsmanId }: CraftsmanReviewsTabProps) {
-  const [reviews, setReviews] = useState<any[]>([]);
+  const [reviews, setReviews] = useState<ReviewData[]>([]);
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
@@ -21,7 +32,7 @@ export function CraftsmanReviewsTab({ craftsmanId }: CraftsmanReviewsTabProps) {
       try {
         // Use RPC function to get craftsman reviews
         const { data, error } = await supabase
-          .rpc('get_craftsman_reviews', { craftsman_id_param: craftsmanId })
+          .rpc('get_craftsman_reviews', { p_craftsman_id: craftsmanId })
           .order('created_at', { ascending: false });
         
         if (error) throw error;

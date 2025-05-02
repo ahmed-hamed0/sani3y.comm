@@ -42,6 +42,14 @@ export interface JobApplicationProps {
   onSuccess: () => void;
 }
 
+interface JobData {
+  id: string;
+  title: string;
+  client?: {
+    id: string;
+  };
+}
+
 export function JobApplication({
   jobId, 
   isOpen,
@@ -51,7 +59,7 @@ export function JobApplication({
   const { user, isCraftsman } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [jobData, setJobData] = useState<any>(null);
+  const [jobData, setJobData] = useState<JobData | null>(null);
 
   const form = useForm<ApplicationFormValues>({
     resolver: zodResolver(applicantSchema),
@@ -103,7 +111,7 @@ export function JobApplication({
 
       if (checkError) throw checkError;
 
-      // TypeScript fix - check if existingApplication exists and has length property
+      // TypeScript fix - check if existingApplication exists
       if (existingApplication && Array.isArray(existingApplication) && existingApplication.length > 0) {
         toast({
           title: "لا يمكن التقديم",
