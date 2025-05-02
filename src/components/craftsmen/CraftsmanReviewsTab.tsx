@@ -31,7 +31,7 @@ export function CraftsmanReviewsTab({ craftsmanId }: CraftsmanReviewsTabProps) {
       try {
         // Use RPC function to get craftsman reviews
         const { data, error } = await supabase
-          .rpc('get_craftsman_reviews', { p_craftsman_id: craftsmanId })
+          .rpc<ReviewData[]>('get_craftsman_reviews', { p_craftsman_id: craftsmanId })
           .order('created_at', { ascending: false });
         
         if (error) throw error;

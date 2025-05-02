@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,12 +44,10 @@ export interface JobApplicationProps {
 interface JobData {
   id: string;
   title: string;
-  client?: {
-    id: string;
-  };
+  client_id?: string;
 }
 
-interface ApplicationCheckResponse {
+interface ApplicationCheckResult {
   exists: boolean;
 }
 
@@ -88,9 +85,7 @@ export function JobApplication({
             setJobData({
               id: data.id,
               title: data.title,
-              client: {
-                id: data.client_id
-              }
+              client_id: data.client_id
             });
           }
         } catch (error) {
@@ -116,7 +111,7 @@ export function JobApplication({
     try {
       // التحقق من وجود تقديم سابق
       const { data: checkData, error: checkError } = await supabase
-        .rpc<ApplicationCheckResponse>("check_job_application", {
+        .rpc<ApplicationCheckResult>("check_job_application", {
           craftsman_id_param: user.id,
           job_id_param: jobId,
         });
@@ -148,11 +143,11 @@ export function JobApplication({
       if (applicationError) throw applicationError;
 
       // إرسال إشعار للعميل
-      if (jobData && jobData.client && jobData.client.id) {
+      if (jobData && jobData.client_id) {
         await supabase
           .from("notifications")
           .insert({
-            user_id: jobData.client.id,
+            user_id: jobData.client_id,
             title: "عرض جديد على مهمتك",
             message: `تلقيت عرضاً جديداً على مهمة "${jobData.title}"`,
             link: `/job/${jobId}`,

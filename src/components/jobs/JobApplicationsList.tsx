@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -75,7 +74,7 @@ export function JobApplicationsList({ jobId, isMyJob, onRefreshNeeded }: JobAppl
         }
 
         const { data, error } = await supabase
-          .rpc("get_job_applications", { job_id_param: jobId })
+          .rpc<JobApplication[]>("get_job_applications", { job_id_param: jobId })
           .order("created_at", { ascending: false });
 
         if (error) throw error;

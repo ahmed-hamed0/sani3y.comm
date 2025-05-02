@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import MainLayout from '@/components/layouts/MainLayout';
@@ -34,7 +33,7 @@ interface JobDetails {
   assigned_craftsman?: any;
 }
 
-interface ApplicationCheckResponse {
+interface ApplicationCheckResult {
   exists: boolean;
 }
 
@@ -107,7 +106,7 @@ const JobDetails = () => {
           // Check if the user has already applied
           if (isCraftsman) {
             const { data: checkData, error: appError } = await supabase
-              .rpc<ApplicationCheckResponse>("check_job_application", { 
+              .rpc<ApplicationCheckResult>("check_job_application", { 
                 craftsman_id_param: user.id,
                 job_id_param: id
               });
@@ -230,6 +229,7 @@ const JobDetails = () => {
   const isOpenJob = job.status === 'open';
   const isInProgressJob = job.status === 'in_progress';
   const isCompletedJob = job.status === 'completed';
+  const isClient = user && job.client_id === user.id; // This is fine since we removed the duplicate earlier
   const canApply = isCraftsman && isOpenJob && !hasApplied && !isMyJob;
 
   return (
