@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -28,13 +29,13 @@ export function CraftsmanReviewsTab({ craftsmanId }: CraftsmanReviewsTabProps) {
   useEffect(() => {
     const fetchReviews = async () => {
       try {
-        // Fix: Properly specify type parameters for rpc
+        // Fix the type by using generic parameter correctly without constraint
         const { data, error } = await supabase
-          .rpc<ReviewData[], { p_craftsman_id: string }>('get_craftsman_reviews', { p_craftsman_id: craftsmanId })
+          .rpc('get_craftsman_reviews', { p_craftsman_id: craftsmanId })
           .order('created_at', { ascending: false });
         
         if (error) throw error;
-        setReviews(Array.isArray(data) ? data : []);
+        setReviews(Array.isArray(data) ? data as ReviewData[] : []);
       } catch (error) {
         console.error('Error fetching reviews:', error);
       } finally {

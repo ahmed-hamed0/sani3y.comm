@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -109,11 +110,11 @@ export function JobApplication({
 
     setIsSubmitting(true);
     try {
-      // Fix: Properly specify type parameters for rpc
+      // Fix the RPC call by not specifying type parameters
       const { data: checkData, error: checkError } = await supabase
-        .rpc<ApplicationCheckResult, { craftsman_id_param: string, job_id_param: string }>("check_job_application", {
-          craftsman_id_param: user.id,
-          job_id_param: jobId,
+        .rpc("check_job_application", {
+          p_craftsman_id: user.id,
+          p_job_id: jobId,
         });
 
       if (checkError) throw checkError;

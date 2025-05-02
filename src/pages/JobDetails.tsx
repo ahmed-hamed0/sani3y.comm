@@ -105,11 +105,11 @@ const JobDetails = () => {
           
           // Check if the user has already applied
           if (isCraftsman) {
-            // Fix: Properly specify type parameters for rpc
+            // Fix the RPC call by not specifying type parameters
             const { data: checkData, error: appError } = await supabase
-              .rpc<ApplicationCheckResult, { craftsman_id_param: string, job_id_param: string }>("check_job_application", { 
-                craftsman_id_param: user.id,
-                job_id_param: id
+              .rpc("check_job_application", { 
+                p_craftsman_id: user.id,
+                p_job_id: id
               });
             
             if (appError) throw appError;
