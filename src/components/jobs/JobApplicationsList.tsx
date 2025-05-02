@@ -1,86 +1,69 @@
 
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { supabase } from '@/integrations/supabase/client';
-import { Spinner } from '@/components/ui/spinner';
-import { Star, User, MessageSquare } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { toast } from 'sonner';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
-
-interface Application {
-  id: string;
-  proposal: string;
-  budget: number | null;
-  status: 'pending' | 'accepted' | 'rejected';
-  submittedAt: Date;
-  craftsman: {
-    id: string;
-    name: string;
-    avatar?: string;
-    specialty: string;
-    rating: number;
-  };
-}
+import { useState, useEffect } from "react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "@/components/ui/sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { formatDistance } from "date-fns";
+import { ar } from "date-fns/locale";
+import { Check, X, Star } from "lucide-react";
 
 interface JobApplicationsListProps {
   jobId: string;
-  isMyJob: boolean;
+  clientId: string;
+  currentUserId?: string;
 }
 
-const JobApplicationsList = ({ jobId, isMyJob }: JobApplicationsListProps) => {
-  const [applications, setApplications] = useState<Application[]>([]);
+interface JobApplication {
+  id: string;
+  price: number;
+  details: string;
+  status: string;
+  created_at: string;
+  craftsman: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    avatar_url: string | null;
+    rating: number | null;
+    specialty: string | null;
+  };
+}
+
+export const JobApplicationsList = ({ 
+  jobId, 
+  clientId, 
+  currentUserId 
+}: JobApplicationsListProps) => {
+  const [applications, setApplications] = useState<JobApplication[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
-  const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false);
-  const [message, setMessage] = useState('');
-  const [isSending, setIsSending] = useState(false);
+  const isOwner = currentUserId === clientId;
 
   useEffect(() => {
     const fetchApplications = async () => {
       try {
-        setLoading(true);
-        
-        // Use the RPC function to fetch job applications
         const { data, error } = await supabase
-          .rpc('get_job_applications', { p_job_id: jobId });
+          .rpc('get_job_applications', { job_id_param: jobId })
+          .order('created_at', { ascending: false });
           
-        if (error) {
-          console.error('Error fetching applications:', error);
-          return;
-        }
+        if (error) throw error;
         
-        if (data) {
-          // Transform the received data into our Application interface
-          const formattedApplications = data.map((app: any) => ({
-            id: app.id,
-            proposal: app.proposal,
-            budget: app.budget,
-            status: app.status,
-            submittedAt: new Date(app.submitted_at),
-            craftsman: {
-              id: app.craftsman_id,
-              name: app.craftsman_name || 'صنايعي غير معروف',
-              avatar: app.craftsman_avatar,
-              specialty: app.craftsman_specialty || 'تخصص غير محدد',
-              rating: app.craftsman_rating || 0
-            }
-          }));
-          
-          setApplications(formattedApplications);
-        }
-      } catch (err) {
-        console.error('Error in fetchApplications:', err);
+        setApplications(data as JobApplication[]);
+      } catch (error) {
+        console.error('Error fetching applications:', error);
+        toast("حدث خطأ أثناء جلب العروض", {
+          style: { backgroundColor: 'rgb(220, 38, 38)', color: 'white' }
+        });
       } finally {
         setLoading(false);
       }
     };
-    
-    if (isMyJob) {
-      fetchApplications();
-    }
-  }, [jobId, isMyJob]);
+
+    fetchApplications();
+  }, [jobId]);
 
   const handleAcceptApplication = async (applicationId: string) => {
     try {
@@ -89,234 +72,239 @@ const JobApplicationsList = ({ jobId, isMyJob }: JobApplicationsListProps) => {
         .update({ status: 'accepted' })
         .eq('id', applicationId);
         
-      if (error) {
-        console.error('Error accepting application:', error);
-        toast.error('حدث خطأ أثناء قبول الطلب');
-        return;
-      }
-
-      // Update job status to assigned
-      const { error: jobError } = await supabase
-        .from('jobs')
-        .update({ 
-          status: 'assigned',
-          craftsman_id: applications.find(app => app.id === applicationId)?.craftsman.id
-        })
-        .eq('id', jobId);
-        
-      if (jobError) {
-        console.error('Error updating job status:', jobError);
-      }
+      if (error) throw error;
       
-      // Update applications in UI
-      setApplications(apps => 
-        apps.map(app => 
-          app.id === applicationId 
-            ? { ...app, status: 'accepted' } 
-            : { ...app, status: 'rejected' }
-        )
-      );
-
-      // Send notification to the accepted craftsman
+      // Update other applications to rejected
+      await supabase
+        .from('job_applications')
+        .update({ status: 'rejected' })
+        .eq('job_id', jobId)
+        .neq('id', applicationId);
+        
+      // Update job status
+      await supabase
+        .from('jobs')
+        .update({ status: 'in_progress' })
+        .eq('id', jobId);
+      
+      // Find the accepted application to get craftsman info
       const acceptedApp = applications.find(app => app.id === applicationId);
+      
       if (acceptedApp) {
-        const { error: notificationError } = await supabase
+        // Create notification for the craftsman
+        await supabase
           .from('notifications')
           .insert({
             user_id: acceptedApp.craftsman.id,
             title: 'تم قبول عرضك',
-            message: 'تم قبول عرضك للمهمة، يمكنك التواصل مع العميل للبدء في العمل',
-            link: `/job/${jobId}`
+            content: `تم قبول عرضك على المهمة!`,
+            type: 'application_accepted',
+            related_id: jobId,
+            read: false,
           });
-
-        if (notificationError) {
-          console.error('Error sending notification:', notificationError);
-        }
       }
       
-      toast.success('تم قبول العرض بنجاح');
-    } catch (err) {
-      console.error('Error in handleAcceptApplication:', err);
-      toast.error('حدث خطأ غير متوقع');
-    }
-  };
-
-  const openMessageDialog = (application: Application) => {
-    setSelectedApplication(application);
-    setIsMessageDialogOpen(true);
-  };
-
-  const handleSendMessage = async () => {
-    if (!message.trim() || !selectedApplication) return;
-    
-    try {
-      setIsSending(true);
-      
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-      
-      if (userError || !userData.user) {
-        toast.error('فشل في التحقق من المستخدم');
-        return;
-      }
-      
-      const { error } = await supabase
-        .from('messages')
-        .insert({
-          content: message.trim(),
-          sender_id: userData.user.id,
-          receiver_id: selectedApplication.craftsman.id,
-          read: false
-        });
-        
-      if (error) {
-        console.error('Error sending message:', error);
-        toast.error('فشل في إرسال الرسالة');
-        return;
-      }
-      
-      toast.success('تم إرسال الرسالة بنجاح');
-      setMessage('');
-      setIsMessageDialogOpen(false);
-    } catch (err) {
-      console.error('Error in handleSendMessage:', err);
-      toast.error('حدث خطأ غير متوقع');
-    } finally {
-      setIsSending(false);
-    }
-  };
-
-  // Generate stars based on rating
-  const renderStars = (rating: number) => {
-    const stars = [];
-    for (let i = 1; i <= 5; i++) {
-      stars.push(
-        <Star
-          key={i}
-          className={`h-4 w-4 ${i <= rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`}
-        />
+      // Update local state
+      setApplications(
+        applications.map((app) => ({
+          ...app,
+          status: app.id === applicationId ? 'accepted' : 'rejected',
+        }))
       );
+      
+      toast("تم قبول العرض بنجاح", {
+        style: { backgroundColor: 'rgb(22, 163, 74)', color: 'white' }
+      });
+      
+    } catch (error) {
+      console.error('Error accepting application:', error);
+      toast("حدث خطأ أثناء قبول العرض", {
+        style: { backgroundColor: 'rgb(220, 38, 38)', color: 'white' }
+      });
     }
-    return stars;
   };
 
-  if (!isMyJob) {
-    return null;
+  const handleRejectApplication = async (applicationId: string) => {
+    try {
+      const { error } = await supabase
+        .from('job_applications')
+        .update({ status: 'rejected' })
+        .eq('id', applicationId);
+        
+      if (error) throw error;
+      
+      // Get the rejected application
+      const rejectedApp = applications.find(app => app.id === applicationId);
+      
+      if (rejectedApp) {
+        // Create notification for the craftsman
+        await supabase
+          .from('notifications')
+          .insert({
+            user_id: rejectedApp.craftsman.id,
+            title: 'تم رفض عرضك',
+            content: `للأسف، تم رفض عرضك على المهمة.`,
+            type: 'application_rejected',
+            related_id: jobId,
+            read: false,
+          });
+      }
+      
+      // Update local state
+      setApplications(
+        applications.map((app) => ({
+          ...app,
+          status: app.id === applicationId ? 'rejected' : app.status,
+        }))
+      );
+      
+      toast("تم رفض العرض بنجاح", {
+        style: { backgroundColor: 'rgb(220, 38, 38)', color: 'white' }
+      });
+      
+    } catch (error) {
+      console.error('Error rejecting application:', error);
+      toast("حدث خطأ أثناء رفض العرض", {
+        style: { backgroundColor: 'rgb(220, 38, 38)', color: 'white' }
+      });
+    }
+  };
+
+  const renderStars = (rating: number | null) => {
+    if (!rating) return null;
+    
+    return (
+      <div className="flex items-center">
+        {Array(5)
+          .fill(0)
+          .map((_, i) => (
+            <Star
+              key={i}
+              className={`w-3 h-3 ${
+                i < Math.round(rating) ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
+              }`}
+            />
+          ))}
+        <span className="text-xs text-gray-500 mr-1">{rating.toFixed(1)}</span>
+      </div>
+    );
+  };
+
+  const getBadgeStyle = (status: string) => {
+    switch (status) {
+      case 'accepted':
+        return "bg-green-500";
+      case 'rejected':
+        return "bg-red-500";
+      default:
+        return "bg-yellow-500";
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'accepted':
+        return "تم القبول";
+      case 'rejected':
+        return "مرفوض";
+      default:
+        return "قيد الانتظار";
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-32 w-full" />
+      </div>
+    );
+  }
+
+  if (applications.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-500">لا توجد عروض على هذه المهمة حتى الآن.</p>
+      </div>
+    );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 mt-6">
-      <h2 className="text-xl font-bold mb-4">المتقدمون للمهمة</h2>
-      
-      {loading ? (
-        <div className="flex justify-center py-12">
-          <Spinner size="md" />
-        </div>
-      ) : applications.length > 0 ? (
-        <div className="space-y-6">
-          {applications.map(app => (
-            <div key={app.id} className="border rounded-lg p-4 bg-neutral">
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="md:w-1/4 flex flex-col items-center">
-                  <img 
-                    src={app.craftsman.avatar || '/placeholder.svg'} 
-                    alt={app.craftsman.name}
-                    className="w-20 h-20 rounded-full object-cover mb-2"
-                  />
-                  <h3 className="font-semibold text-center">{app.craftsman.name}</h3>
-                  <p className="text-sm text-gray-600 mb-1">{app.craftsman.specialty}</p>
-                  <div className="flex mb-2">
-                    {renderStars(app.craftsman.rating)}
+    <div className="space-y-4">
+      {applications.map((application) => (
+        <Card key={application.id} className="p-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex items-center">
+              <Avatar className="h-12 w-12">
+                <AvatarImage src={application.craftsman.avatar_url || ""} />
+                <AvatarFallback>
+                  {application.craftsman.first_name?.[0]}
+                  {application.craftsman.last_name?.[0]}
+                </AvatarFallback>
+              </Avatar>
+            </div>
+
+            <div className="flex-1">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-medium">
+                      {application.craftsman.first_name} {application.craftsman.last_name}
+                    </h3>
+                    <Badge variant="outline">{application.craftsman.specialty}</Badge>
                   </div>
-                  <Button asChild size="sm" variant="outline" className="w-full mb-2">
-                    <Link to={`/craftsmen/${app.craftsman.id}`}>
-                      عرض الملف الشخصي
-                    </Link>
-                  </Button>
+                  {renderStars(application.craftsman.rating)}
                 </div>
-                
-                <div className="md:w-3/4">
-                  <div className="mb-3">
-                    <h4 className="font-semibold mb-1">المقترح:</h4>
-                    <p className="text-gray-700 whitespace-pre-line">{app.proposal}</p>
-                  </div>
-                  
-                  {app.budget && (
-                    <div className="mb-4">
-                      <h4 className="font-semibold mb-1">السعر المقترح:</h4>
-                      <p className="text-primary font-semibold">{app.budget} ج.م</p>
-                    </div>
-                  )}
-                  
-                  <div className="flex flex-wrap gap-2 justify-end">
-                    <Button 
-                      onClick={() => openMessageDialog(app)} 
-                      variant="outline"
-                      size="sm"
-                    >
-                      <MessageSquare className="h-4 w-4 ml-2" />
-                      إرسال رسالة
-                    </Button>
-                    
-                    {app.status === 'pending' && (
-                      <Button 
-                        onClick={() => handleAcceptApplication(app.id)} 
-                        size="sm"
-                      >
-                        قبول العرض
-                      </Button>
-                    )}
-                    
-                    {app.status === 'accepted' && (
-                      <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
-                        تم قبول العرض
-                      </span>
-                    )}
-                    
-                    {app.status === 'rejected' && (
-                      <span className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm">
-                        تم رفض العرض
-                      </span>
-                    )}
-                  </div>
+
+                <Badge className={getBadgeStyle(application.status)}>
+                  {getStatusText(application.status)}
+                </Badge>
+              </div>
+
+              <p className="text-gray-700 mb-2">{application.details}</p>
+
+              <div className="flex flex-wrap items-center justify-between gap-2 mt-4">
+                <div>
+                  <span className="font-bold text-xl text-primary">
+                    {application.price} جنيه
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <span>
+                    {formatDistance(new Date(application.created_at), new Date(), {
+                      addSuffix: true,
+                      locale: ar,
+                    })}
+                  </span>
                 </div>
               </div>
+
+              {isOwner && application.status === 'pending' && (
+                <div className="flex justify-end gap-2 mt-4">
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    onClick={() => handleRejectApplication(application.id)}
+                  >
+                    <X className="ml-1 h-4 w-4" />
+                    رفض
+                  </Button>
+                  <Button 
+                    variant="default" 
+                    size="sm" 
+                    onClick={() => handleAcceptApplication(application.id)}
+                  >
+                    <Check className="ml-1 h-4 w-4" />
+                    قبول
+                  </Button>
+                </div>
+              )}
             </div>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <User className="h-12 w-12 mx-auto text-gray-400 mb-2" />
-          <p className="text-gray-500">لا يوجد متقدمون للمهمة حتى الآن</p>
-        </div>
-      )}
-      
-      {/* Message Dialog */}
-      <Dialog open={isMessageDialogOpen} onOpenChange={setIsMessageDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>إرسال رسالة إلى {selectedApplication?.craftsman.name}</DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <Textarea
-              placeholder="اكتب رسالتك هنا..."
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              rows={5}
-              className="resize-none"
-            />
           </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsMessageDialogOpen(false)}>
-              إلغاء
-            </Button>
-            <Button onClick={handleSendMessage} disabled={isSending || !message.trim()}>
-              {isSending ? <Spinner size="sm" /> : 'إرسال'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </Card>
+      ))}
     </div>
   );
 };

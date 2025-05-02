@@ -17,7 +17,7 @@ const categories = [
   "ألوميتال", "محارة", "بلاط", "نقاشة", "جبس", "زجاج", "أخرى"
 ];
 
-export const PostJobForm = () => {
+const PostJobForm = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -251,3 +251,5 @@ export const PostJobForm = () => {
     </Card>
   );
 };
+
+export default PostJobForm;

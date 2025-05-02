@@ -1,185 +1,126 @@
 
-import { useEffect, useState } from "react";
-import { Star, User, ThumbsUp } from 'lucide-react';
-import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
+import { useState, useEffect } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Card } from "@/components/ui/card";
+import { Star } from "lucide-react";
+import { formatDistance } from "date-fns";
+import { ar } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface Review {
   id: string;
   rating: number;
   comment: string;
-  createdAt: Date;
-  reviewer: {
+  created_at: string;
+  client: {
     id: string;
-    name: string;
-    avatar?: string;
+    first_name: string;
+    last_name: string;
+    avatar_url: string | null;
   };
 }
 
-export const CraftsmanReviewsTab = ({ craftsman }: { craftsman: { id: string } }) => {
+interface CraftsmanReviewsTabProps {
+  craftsmanId: string;
+}
+
+const CraftsmanReviewsTab = ({ craftsmanId }: CraftsmanReviewsTabProps) => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchReviews = async () => {
       try {
-        setLoading(true);
+        // Using the craftsmanId as a string parameter is fine here
+        const { data, error } = await supabase
+          .rpc('get_craftsman_reviews', { craftsman_id: craftsmanId })
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
         
-        // Use RPC function to fetch reviews
-        const { data, error } = await supabase.rpc('get_craftsman_reviews', {
-          p_craftsman_id: craftsman.id
-        });
-        
-        if (error) {
-          console.error("Error fetching reviews:", error);
-          setError("حدث خطأ أثناء تحميل التقييمات");
-          return;
-        }
-        
-        if (data) {
-          // Map the data to our Review interface
-          const formattedReviews = data.map((review: any) => ({
-            id: review.id,
-            rating: review.rating,
-            comment: review.comment || '',
-            createdAt: new Date(review.created_at),
-            reviewer: {
-              id: review.reviewer_id,
-              name: review.reviewer_name || 'مستخدم غير معروف',
-              avatar: review.reviewer_avatar
-            }
-          }));
-          
-          setReviews(formattedReviews);
-        } else {
-          setReviews([]);
-        }
-      } catch (err) {
-        console.error("Error in fetchReviews:", err);
-        setError("حدث خطأ غير متوقع");
+        // Type assertion since we know the data structure will match Review[]
+        setReviews(data as Review[]);
+      } catch (error) {
+        console.error('Error fetching reviews:', error);
       } finally {
         setLoading(false);
       }
     };
-    
-    fetchReviews();
-  }, [craftsman.id]);
-  
-  // Calculate average rating
-  const averageRating = reviews.length 
-    ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length 
-    : 0;
-  
-  // Generate stars based on rating
-  const renderStars = (rating: number) => {
-    const stars = [];
-    for (let i = 1; i <= 5; i++) {
-      stars.push(
-        <Star 
-          key={i} 
-          className={`h-5 w-5 ${i <= rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`} 
-        />
-      );
-    }
-    return stars;
-  };
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('ar-EG', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
+    if (craftsmanId) {
+      fetchReviews();
+    }
+  }, [craftsmanId]);
+
+  const renderStars = (rating: number) => {
+    return Array(5)
+      .fill(0)
+      .map((_, i) => (
+        <Star
+          key={i}
+          className={`w-4 h-4 ${
+            i < rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
+          }`}
+        />
+      ));
   };
 
   if (loading) {
     return (
-      <div className="flex justify-center py-16">
-        <Spinner size="lg" />
+      <div className="space-y-4">
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-32 w-full" />
       </div>
     );
   }
 
-  if (error) {
+  if (reviews.length === 0) {
     return (
-      <div className="flex justify-center py-16">
-        <p className="text-red-500">{error}</p>
+      <div className="flex flex-col items-center justify-center py-10 text-center">
+        <h3 className="text-xl font-medium text-gray-700 mb-2">
+          لا توجد تقييمات بعد
+        </h3>
+        <p className="text-gray-500">
+          سيظهر هنا تقييمات العملاء بمجرد أن يقوموا بتقييم هذا الصنايعي.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="py-6">
-      <div className="bg-gray-50 p-6 rounded-lg mb-8">
-        <div className="flex flex-col md:flex-row gap-8 items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="text-4xl font-bold text-primary">
-              {averageRating.toFixed(1)}
-            </div>
-            <div>
-              <div className="flex mb-1">
-                {renderStars(Math.round(averageRating))}
+    <div className="space-y-4">
+      {reviews.map((review) => (
+        <Card key={review.id} className="p-4">
+          <div className="flex items-start gap-4">
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={review.client.avatar_url || ""} />
+              <AvatarFallback>
+                {review.client.first_name?.[0]}
+                {review.client.last_name?.[0]}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1">
+              <div className="flex flex-wrap items-center gap-2 mb-1">
+                <h4 className="font-medium">
+                  {review.client.first_name} {review.client.last_name}
+                </h4>
+                <span className="text-sm text-gray-500">
+                  {formatDistance(new Date(review.created_at), new Date(), {
+                    addSuffix: true,
+                    locale: ar,
+                  })}
+                </span>
               </div>
-              <p className="text-sm text-gray-500">
-                بناءً على {reviews.length} تقييم
-              </p>
+              <div className="flex mb-2">{renderStars(review.rating)}</div>
+              <p className="text-gray-700">{review.comment}</p>
             </div>
           </div>
-          <Button>أضف تقييم</Button>
-        </div>
-      </div>
-
-      {reviews.length > 0 ? (
-        <div className="space-y-6">
-          {reviews.map((review) => (
-            <div key={review.id} className="border rounded-lg p-6">
-              <div className="flex justify-between items-start">
-                <div className="flex items-center gap-3">
-                  {review.reviewer.avatar ? (
-                    <img 
-                      src={review.reviewer.avatar} 
-                      alt={review.reviewer.name}
-                      className="h-12 w-12 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="h-12 w-12 bg-gray-200 rounded-full flex items-center justify-center">
-                      <User className="h-6 w-6 text-gray-500" />
-                    </div>
-                  )}
-                  <div>
-                    <h3 className="font-semibold">{review.reviewer.name}</h3>
-                    <div className="flex mt-1">
-                      {renderStars(review.rating)}
-                    </div>
-                  </div>
-                </div>
-                <div className="text-sm text-gray-500">
-                  {formatDate(review.createdAt)}
-                </div>
-              </div>
-              
-              {review.comment && (
-                <div className="mt-4">
-                  <p className="text-gray-700">{review.comment}</p>
-                </div>
-              )}
-              
-              <div className="mt-4 flex items-center gap-2">
-                <Button variant="ghost" size="sm" className="text-gray-500">
-                  <ThumbsUp className="h-4 w-4 mr-1" />
-                  مفيد
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-12">
-          <p className="text-gray-500">لا يوجد تقييمات حتى الآن</p>
-        </div>
-      )}
+        </Card>
+      ))}
     </div>
   );
 };
+
+export default CraftsmanReviewsTab;

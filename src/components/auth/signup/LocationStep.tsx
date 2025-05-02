@@ -167,3 +167,5 @@ export const LocationStep = ({
     </div>
   );
 };
+
+export default LocationStep;
