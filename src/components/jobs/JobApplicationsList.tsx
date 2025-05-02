@@ -44,10 +44,6 @@ interface JobData {
   client_id: string;
 }
 
-interface ApplicationCheckResponse {
-  exists: boolean;
-}
-
 export function JobApplicationsList({ jobId, isMyJob, onRefreshNeeded }: JobApplicationsListProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -74,7 +70,7 @@ export function JobApplicationsList({ jobId, isMyJob, onRefreshNeeded }: JobAppl
         }
 
         const { data, error } = await supabase
-          .rpc<JobApplication[]>("get_job_applications", { job_id_param: jobId })
+          .rpc<JobApplication[], { job_id_param: string }>("get_job_applications", { job_id_param: jobId })
           .order("created_at", { ascending: false });
 
         if (error) throw error;

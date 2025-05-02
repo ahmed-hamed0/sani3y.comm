@@ -109,9 +109,9 @@ export function JobApplication({
 
     setIsSubmitting(true);
     try {
-      // التحقق من وجود تقديم سابق
+      // Fix: Properly specify type parameters for rpc
       const { data: checkData, error: checkError } = await supabase
-        .rpc<ApplicationCheckResult>("check_job_application", {
+        .rpc<ApplicationCheckResult, { craftsman_id_param: string, job_id_param: string }>("check_job_application", {
           craftsman_id_param: user.id,
           job_id_param: jobId,
         });

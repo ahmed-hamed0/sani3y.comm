@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -29,9 +28,9 @@ export function CraftsmanReviewsTab({ craftsmanId }: CraftsmanReviewsTabProps) {
   useEffect(() => {
     const fetchReviews = async () => {
       try {
-        // Use RPC function to get craftsman reviews
+        // Fix: Properly specify type parameters for rpc
         const { data, error } = await supabase
-          .rpc<ReviewData[]>('get_craftsman_reviews', { p_craftsman_id: craftsmanId })
+          .rpc<ReviewData[], { p_craftsman_id: string }>('get_craftsman_reviews', { p_craftsman_id: craftsmanId })
           .order('created_at', { ascending: false });
         
         if (error) throw error;
