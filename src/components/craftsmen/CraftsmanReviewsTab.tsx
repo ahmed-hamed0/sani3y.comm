@@ -1,9 +1,9 @@
 
 import { useEffect, useState } from "react";
 import { Star, User, ThumbsUp } from 'lucide-react';
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Review {
   id: string;
@@ -17,7 +17,7 @@ interface Review {
   };
 }
 
-const CraftsmanReviewsTab = ({ craftsmanId }: { craftsmanId: string }) => {
+export const CraftsmanReviewsTab = ({ craftsman }: { craftsman: { id: string } }) => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,9 +27,9 @@ const CraftsmanReviewsTab = ({ craftsmanId }: { craftsmanId: string }) => {
       try {
         setLoading(true);
         
-        // Create a custom function to fetch reviews with reviewer information
+        // Use RPC function to fetch reviews
         const { data, error } = await supabase.rpc('get_craftsman_reviews', {
-          p_craftsman_id: craftsmanId
+          p_craftsman_id: craftsman.id
         });
         
         if (error) {
@@ -65,7 +65,7 @@ const CraftsmanReviewsTab = ({ craftsmanId }: { craftsmanId: string }) => {
     };
     
     fetchReviews();
-  }, [craftsmanId]);
+  }, [craftsman.id]);
   
   // Calculate average rating
   const averageRating = reviews.length 
@@ -183,5 +183,3 @@ const CraftsmanReviewsTab = ({ craftsmanId }: { craftsmanId: string }) => {
     </div>
   );
 };
-
-export default CraftsmanReviewsTab;
