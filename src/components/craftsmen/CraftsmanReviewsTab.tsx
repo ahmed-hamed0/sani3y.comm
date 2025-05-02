@@ -1,125 +1,110 @@
 
-import { useState, useEffect } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Card } from "@/components/ui/card";
-import { Star } from "lucide-react";
-import { formatDistance } from "date-fns";
-import { ar } from "date-fns/locale";
-import { supabase } from "@/integrations/supabase/client";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useState, useEffect } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { supabase } from '@/integrations/supabase/client';
+import { formatDistanceToNow, parseISO } from 'date-fns';
+import { ar } from 'date-fns/locale';
+import { Spinner } from '@/components/ui/spinner';
 
-interface Review {
-  id: string;
-  rating: number;
-  comment: string;
-  created_at: string;
-  client: {
-    id: string;
-    first_name: string;
-    last_name: string;
-    avatar_url: string | null;
-  };
-}
-
-interface CraftsmanReviewsTabProps {
+// Interface for the CraftsmanReviewsTab props
+export interface CraftsmanReviewsTabProps {
   craftsmanId: string;
 }
 
-export const CraftsmanReviewsTab = ({ craftsmanId }: CraftsmanReviewsTabProps) => {
-  const [reviews, setReviews] = useState<Review[]>([]);
+export function CraftsmanReviewsTab({ craftsmanId }: CraftsmanReviewsTabProps) {
+  const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-
+  
   useEffect(() => {
     const fetchReviews = async () => {
       try {
+        // Use RPC function to get craftsman reviews
         const { data, error } = await supabase
-          .rpc('get_craftsman_reviews', { craftsman_id: craftsmanId })
+          .rpc('get_craftsman_reviews', { craftsman_id_param: craftsmanId })
           .order('created_at', { ascending: false });
-
-        if (error) throw error;
         
-        setReviews(data as unknown as Review[]);
+        if (error) throw error;
+        setReviews(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error('Error fetching reviews:', error);
       } finally {
         setLoading(false);
       }
     };
-
+    
     if (craftsmanId) {
       fetchReviews();
     }
   }, [craftsmanId]);
-
-  const renderStars = (rating: number) => {
-    return Array(5)
-      .fill(0)
-      .map((_, i) => (
-        <Star
-          key={i}
-          className={`w-4 h-4 ${
-            i < rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
-          }`}
-        />
-      ));
-  };
-
+  
   if (loading) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-32 w-full" />
+      <div className="flex justify-center items-center py-12">
+        <Spinner size="lg" />
       </div>
     );
   }
-
-  if (reviews.length === 0) {
+  
+  if (!reviews.length) {
     return (
-      <div className="flex flex-col items-center justify-center py-10 text-center">
-        <h3 className="text-xl font-medium text-gray-700 mb-2">
-          لا توجد تقييمات بعد
-        </h3>
-        <p className="text-gray-500">
-          سيظهر هنا تقييمات العملاء بمجرد أن يقوموا بتقييم هذا الصنايعي.
-        </p>
+      <div className="text-center py-8">
+        <p className="text-muted-foreground">لا توجد تقييمات حتى الآن لهذا الصنايعي.</p>
       </div>
     );
   }
-
+  
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {reviews.map((review) => (
-        <Card key={review.id} className="p-4">
-          <div className="flex items-start gap-4">
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={review.client.avatar_url || ""} />
-              <AvatarFallback>
-                {review.client.first_name?.[0]}
-                {review.client.last_name?.[0]}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <div className="flex flex-wrap items-center gap-2 mb-1">
-                <h4 className="font-medium">
-                  {review.client.first_name} {review.client.last_name}
-                </h4>
-                <span className="text-sm text-gray-500">
-                  {formatDistance(new Date(review.created_at), new Date(), {
-                    addSuffix: true,
-                    locale: ar,
-                  })}
-                </span>
+        <Card key={review.id} className="overflow-hidden">
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-start mb-4">
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarImage src={review.reviewer?.avatar_url || ""} />
+                  <AvatarFallback>
+                    {review.reviewer?.full_name?.[0] || "R"}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h3 className="font-medium">{review.reviewer?.full_name || "عميل"}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {review.created_at ? formatDistanceToNow(parseISO(review.created_at), { 
+                      addSuffix: true, 
+                      locale: ar 
+                    }) : ''}
+                  </p>
+                </div>
               </div>
-              <div className="flex mb-2">{renderStars(review.rating)}</div>
-              <p className="text-gray-700">{review.comment}</p>
+              <div className="flex">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <svg 
+                    key={i}
+                    xmlns="http://www.w3.org/2000/svg" 
+                    width="16" 
+                    height="16" 
+                    viewBox="0 0 24 24" 
+                    fill={i < review.rating ? "#FFD700" : "none"}
+                    stroke="#FFD700" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                    className="ml-1"
+                  >
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  </svg>
+                ))}
+              </div>
             </div>
-          </div>
+            <div className="text-gray-700">
+              {review.comment}
+            </div>
+          </CardContent>
         </Card>
       ))}
     </div>
   );
-};
+}
 
-// Also export as default for backwards compatibility
 export default CraftsmanReviewsTab;

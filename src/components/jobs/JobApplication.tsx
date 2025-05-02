@@ -103,7 +103,8 @@ export function JobApplication({
 
       if (checkError) throw checkError;
 
-      if (existingApplication && existingApplication.length > 0) {
+      // TypeScript fix - check if existingApplication exists and has length property
+      if (existingApplication && Array.isArray(existingApplication) && existingApplication.length > 0) {
         toast({
           title: "لا يمكن التقديم",
           description: "لقد قدمت عرضاً بالفعل على هذه المهمة",

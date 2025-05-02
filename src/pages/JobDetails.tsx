@@ -211,7 +211,7 @@ const JobDetails = () => {
   const isOpenJob = job.status === 'open';
   const isInProgressJob = job.status === 'in_progress';
   const isCompletedJob = job.status === 'completed';
-  const isClient = user && job.client_id === user.id;
+  // Removed duplicate isClient declaration - using the one from useAuth()
   const canApply = isCraftsman && isOpenJob && !hasApplied && !isMyJob;
 
   return (
