@@ -1,33 +1,14 @@
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { User as SupabaseUser } from '@supabase/supabase-js';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { getUserProfile, createUserProfile } from '@/lib/profile';
 import { UserRole } from '@/types';
-import { toast } from '@/components/ui/sonner';
+import { AuthContext } from './AuthContext';
 
 type UserData = SupabaseUser & {
   role?: UserRole | null;
 };
-
-type AuthContextType = {
-  user: UserData | null;
-  loading: boolean;
-  role: UserRole | null;
-  isClient: boolean;
-  isCraftsman: boolean;
-  refreshProfile: () => Promise<void>;
-};
-
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  loading: true,
-  role: null,
-  isClient: false,
-  isCraftsman: false,
-  refreshProfile: async () => {}
-});
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<UserData | null>(null);
@@ -116,17 +97,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     let mounted = true;
     
-    // طريقة التهيئة الصحيحة: إعداد مستمعي حالة المصادقة أولًا
-    // ثم التحقق من وجود جلسة حالية
     const initAuth = async () => {
       try {
         console.log('Initializing authentication...');
         
-        // تحديد خيارات الإصرار بناءً على حالة "تذكرني"
         const shouldPersistSession = localStorage.getItem('rememberMe') === 'true';
         console.log('Should persist session:', shouldPersistSession);
         
-        // إعداد مستمع لتغييرات حالة المصادقة
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           async (event, session) => {
             if (!mounted) return;
@@ -138,8 +115,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               userData.role = null;
               setUser(userData);
               
-              // استخدام setTimeout لتأخير تحميل الملف الشخصي
-              // لتجنب مشاكل التزامن مع مكتبة المصادقة
               setTimeout(async () => {
                 if (!mounted) return;
                 try {
@@ -159,7 +134,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           }
         );
         
-        // التحقق من وجود جلسة حالية
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session?.user && mounted) {
@@ -204,64 +178,3 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     </AuthContext.Provider>
   );
 };
-
-export const useAuth = () => useContext(AuthContext);
-
-export function RequireAuth({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!loading && !user) {
-      navigate('/sign-in', { replace: true });
-    }
-  }, [navigate, user, loading]);
-
-  if (loading) {
-    return <div className="flex justify-center items-center h-screen">جاري التحميل...</div>;
-  }
-
-  return user ? <>{children}</> : null;
-}
-
-export function RequireClient({ children }: { children: React.ReactNode }) {
-  const { user, loading, isClient } = useAuth();
-  const navigate = useNavigate();
-  
-  useEffect(() => {
-    if (!loading) {
-      if (!user) {
-        navigate('/sign-in', { replace: true });
-      } else if (!isClient) {
-        navigate('/', { replace: true });
-      }
-    }
-  }, [navigate, user, loading, isClient]);
-
-  if (loading) {
-    return <div className="flex justify-center items-center h-screen">جاري التحميل...</div>;
-  }
-
-  return (user && isClient) ? <>{children}</> : null;
-}
-
-export function RequireCraftsman({ children }: { children: React.ReactNode }) {
-  const { user, loading, isCraftsman } = useAuth();
-  const navigate = useNavigate();
-  
-  useEffect(() => {
-    if (!loading) {
-      if (!user) {
-        navigate('/sign-in', { replace: true });
-      } else if (!isCraftsman) {
-        navigate('/', { replace: true });
-      }
-    }
-  }, [navigate, user, loading, isCraftsman]);
-
-  if (loading) {
-    return <div className="flex justify-center items-center h-screen">جاري التحميل...</div>;
-  }
-
-  return (user && isCraftsman) ? <>{children}</> : null;
-}

@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import MainLayout from '@/components/layouts/MainLayout';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/auth';
 import { getUserProfile } from '@/lib/profile';
 import { ProfileLoading } from '@/components/profile/ProfileLoading';
 import { ProfileError } from '@/components/profile/ProfileError';

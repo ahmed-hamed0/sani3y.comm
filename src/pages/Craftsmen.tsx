@@ -1,10 +1,11 @@
+
 import { useState, useEffect } from 'react';
 import MainLayout from '@/components/layouts/MainLayout';
 import CraftsmenFilters from '@/components/craftsmen/CraftsmenFilters';
 import CraftsmanCard from '@/components/craftsmen/CraftsmanCard';
 import { supabase } from '@/integrations/supabase/client';
 import { Spinner } from '@/components/ui/spinner';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/auth';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { toast } from '@/components/ui/sonner';

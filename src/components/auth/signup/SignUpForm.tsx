@@ -68,8 +68,7 @@ const SignUpForm = ({ initialRole = 'client' }: SignUpFormProps) => {
     setStep(1);
   };
   
-  // إصلاح نوع الوظيفة ليتطابق مع ما هو متوقع
-  // تعديل الدالة لتكون متوافقة مع نوع المعلمات المتوقع
+  // تصحيح نوع الوظيفة لتقبل معلمة الحدث
   const goToCraftsmanDetails = (e: React.FormEvent) => {
     e.preventDefault();
     const step2Fields = ['governorate', 'city', 'agreeTerms'];
@@ -145,7 +144,8 @@ const SignUpForm = ({ initialRole = 'client' }: SignUpFormProps) => {
             role={role}
             isLoading={isLoading}
             onPrevStep={handlePrevStep}
-            onNextStep={role === 'craftsman' ? goToCraftsmanDetails : undefined}
+            // تصحيح نوع الوظيفة - نحن نمرر دالة تقبل معلمة الحدث
+            onNextStep={role === 'craftsman' ? (e: React.FormEvent) => goToCraftsmanDetails(e) : undefined}
           />
         ) : (
           <CraftsmanDetailsStep

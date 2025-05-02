@@ -1,8 +1,9 @@
+
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { Menu, User, Plus, Bell, X, LogOut } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/auth';
 import { signOut } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 

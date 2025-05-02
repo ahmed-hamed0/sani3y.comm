@@ -20,7 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/auth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Spinner } from "../ui/spinner";
@@ -110,17 +110,19 @@ export function JobApplication({
 
     setIsSubmitting(true);
     try {
-      // Fix: Use any as intermediate type to solve TypeScript error
-      const { data: checkData, error: checkError } = await supabase
-        .rpc("check_job_application", {
+      // Use type assertion to fix the TypeScript error
+      const { data: checkData, error: checkError } = await supabase.rpc(
+        'check_job_application',
+        {
           p_craftsman_id: user.id,
           p_job_id: jobId
-        });
+        }
+      );
 
       if (checkError) throw checkError;
 
-      // Fix: Use proper type assertion for the application check result
-      const typedCheckData = checkData as ApplicationCheckResult;
+      // Use type assertion for the application check result
+      const typedCheckData = checkData as unknown as ApplicationCheckResult;
       if (typedCheckData && typedCheckData.exists) {
         toast({
           title: "لا يمكن التقديم",
