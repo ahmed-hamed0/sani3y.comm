@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Form } from '@/components/ui/form';
@@ -55,15 +54,14 @@ const SignUpForm = ({ initialRole = 'client' }: SignUpFormProps) => {
     setStep(1);
   };
   
-  // Fix the type signature to include the event parameter
-  const goToCraftsmanDetails = (e: React.FormEvent) => {
+  // Fixed type issue: Define the event handler to match expected signature
+  const goToCraftsmanDetails = async (e: React.FormEvent) => {
     e.preventDefault();
     const step2Fields = ['governorate', 'city', 'agreeTerms'];
-    form.trigger(step2Fields as any).then((step2Result) => {
-      if (step2Result) {
-        setStep(3);
-      }
-    });
+    const step2Result = await form.trigger(step2Fields as any);
+    if (step2Result) {
+      setStep(3);
+    }
   };
 
   const onSubmit = async (values: RegisterFormValues) => {

@@ -29,7 +29,7 @@ export function CraftsmanReviewsTab({ craftsmanId }: CraftsmanReviewsTabProps) {
   useEffect(() => {
     const fetchReviews = async () => {
       try {
-        // Fix the type by using generic parameter correctly without constraint
+        // Fix: Remove type parameter and use type assertion on the result
         const { data, error } = await supabase
           .rpc('get_craftsman_reviews', { p_craftsman_id: craftsmanId })
           .order('created_at', { ascending: false });

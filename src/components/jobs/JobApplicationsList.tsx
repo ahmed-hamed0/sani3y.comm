@@ -69,12 +69,13 @@ export function JobApplicationsList({ jobId, isMyJob, onRefreshNeeded }: JobAppl
           });
         }
 
+        // Fix: Remove generic parameter and add type assertion
         const { data, error } = await supabase
           .rpc("get_job_applications", { job_id_param: jobId })
           .order("created_at", { ascending: false });
 
         if (error) throw error;
-        setApplications(data as JobApplication[] || []);
+        setApplications((data as JobApplication[]) || []);
       } catch (error) {
         console.error("Error fetching applications:", error);
         toast({

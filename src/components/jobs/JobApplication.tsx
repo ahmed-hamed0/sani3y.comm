@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,6 +47,7 @@ interface JobData {
   client_id?: string;
 }
 
+// Define proper interface for the check_job_application function result
 interface ApplicationCheckResult {
   exists: boolean;
 }
@@ -110,7 +110,7 @@ export function JobApplication({
 
     setIsSubmitting(true);
     try {
-      // Fix the RPC call by not specifying type parameters
+      // Fix: Remove generic parameters and use type assertion for the result
       const { data: checkData, error: checkError } = await supabase
         .rpc("check_job_application", {
           p_craftsman_id: user.id,
@@ -119,8 +119,9 @@ export function JobApplication({
 
       if (checkError) throw checkError;
 
-      // Check if application exists
-      if (checkData && checkData.exists) {
+      // Check if application exists with proper type assertion
+      const typedCheckData = checkData as ApplicationCheckResult;
+      if (typedCheckData && typedCheckData.exists) {
         toast({
           title: "لا يمكن التقديم",
           description: "لقد قدمت عرضاً بالفعل على هذه المهمة",

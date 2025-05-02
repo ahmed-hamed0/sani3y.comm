@@ -33,6 +33,7 @@ interface JobDetails {
   assigned_craftsman?: any;
 }
 
+// Define proper interface for the check_job_application function result
 interface ApplicationCheckResult {
   exists: boolean;
 }
@@ -105,7 +106,7 @@ const JobDetails = () => {
           
           // Check if the user has already applied
           if (isCraftsman) {
-            // Fix the RPC call by not specifying type parameters
+            // Fix: Remove generic parameters and use type assertion for the result
             const { data: checkData, error: appError } = await supabase
               .rpc("check_job_application", { 
                 p_craftsman_id: user.id,
@@ -113,7 +114,8 @@ const JobDetails = () => {
               });
             
             if (appError) throw appError;
-            setHasApplied(checkData && checkData.exists);
+            // Add type assertion to correctly access the exists property
+            setHasApplied(checkData && (checkData as ApplicationCheckResult).exists);
           }
         }
       } catch (error) {
