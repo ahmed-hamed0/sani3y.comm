@@ -69,6 +69,7 @@ const SignUpForm = ({ initialRole = 'client' }: SignUpFormProps) => {
   };
   
   // إصلاح نوع الوظيفة ليتطابق مع ما هو متوقع
+  // تعديل الدالة لتكون متوافقة مع نوع المعلمات المتوقع
   const goToCraftsmanDetails = (e: React.FormEvent) => {
     e.preventDefault();
     const step2Fields = ['governorate', 'city', 'agreeTerms'];

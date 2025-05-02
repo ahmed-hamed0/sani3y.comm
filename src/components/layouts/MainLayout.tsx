@@ -1,7 +1,6 @@
-
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { Menu, User, Plus, Bell, Search, X, LogOut } from 'lucide-react';
+import { Menu, User, Plus, Bell, X, LogOut } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useAuth } from '@/hooks/useAuth';
 import { signOut } from '@/lib/auth';

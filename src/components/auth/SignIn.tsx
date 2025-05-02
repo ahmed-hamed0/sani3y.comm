@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,10 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { signIn, LoginFormValues } from '@/lib/auth';
+import { signIn, LoginFormValues, loginSchema } from '@/lib/auth';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { loginSchema } from '@/lib/auth';
 import { Spinner } from '@/components/ui/spinner';
 import { getUserProfile, createUserProfile } from '@/lib/profile';
 import { toast } from '@/components/ui/sonner';
