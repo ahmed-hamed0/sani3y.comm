@@ -55,7 +55,7 @@ const SignUpForm = ({ initialRole = 'client' }: SignUpFormProps) => {
     setStep(1);
   };
   
-  // Fix: Provide a function that accepts event parameter when calling from LocationStep
+  // Fix the function type by ensuring it accepts an event parameter
   const goToCraftsmanDetails = (e: React.FormEvent) => {
     e.preventDefault();
     const step2Fields = ['governorate', 'city', 'agreeTerms'];

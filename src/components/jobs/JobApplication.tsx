@@ -110,7 +110,7 @@ export function JobApplication({
 
     setIsSubmitting(true);
     try {
-      // Fix: Properly type the result of the RPC call
+      // Fix: Use any as intermediate type to solve TypeScript error
       const { data: checkData, error: checkError } = await supabase
         .rpc("check_job_application", {
           p_craftsman_id: user.id,

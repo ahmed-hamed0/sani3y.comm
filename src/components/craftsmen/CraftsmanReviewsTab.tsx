@@ -29,7 +29,7 @@ export function CraftsmanReviewsTab({ craftsmanId }: CraftsmanReviewsTabProps) {
   useEffect(() => {
     const fetchReviews = async () => {
       try {
-        // Fix: Use proper type assertion for the result
+        // Fix: Use any as intermediate type and then cast to known type
         const { data, error } = await supabase
           .rpc('get_craftsman_reviews', { p_craftsman_id: craftsmanId })
           .order('created_at', { ascending: false });

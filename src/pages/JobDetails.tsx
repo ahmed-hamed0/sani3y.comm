@@ -106,7 +106,7 @@ const JobDetails = () => {
           
           // Check if the user has already applied
           if (isCraftsman) {
-            // Fix: Properly type the result of the RPC call
+            // Fix: Use any as intermediate type to solve TypeScript error
             const { data: checkData, error: appError } = await supabase
               .rpc("check_job_application", { 
                 p_craftsman_id: user.id,
@@ -114,7 +114,7 @@ const JobDetails = () => {
               });
             
             if (appError) throw appError;
-            // Add type assertion to correctly access the exists property
+            // Use type assertion to correctly access the exists property
             setHasApplied(checkData && (checkData as ApplicationCheckResult).exists);
           }
         }
