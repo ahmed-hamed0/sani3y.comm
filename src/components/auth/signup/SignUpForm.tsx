@@ -11,7 +11,11 @@ import LocationStep from './LocationStep';
 import CraftsmanDetailsStep from './CraftsmanDetailsStep';
 import { Spinner } from '@/components/ui/spinner';
 
-const SignUpForm = () => {
+interface SignUpFormProps {
+  initialRole?: 'client' | 'craftsman';
+}
+
+const SignUpForm = ({ initialRole = 'client' }: SignUpFormProps) => {
   const [step, setStep] = useState<number>(1);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -28,7 +32,7 @@ const SignUpForm = () => {
       confirmPassword: '',
       governorate: '',
       city: '',
-      role: 'client',
+      role: initialRole,
       specialty: '',
       bio: '',
       agreeTerms: false
@@ -126,7 +130,7 @@ const SignUpForm = () => {
             role={role}
             isLoading={isLoading}
             onPrevStep={handlePrevStep}
-            onNextStep={role === 'craftsman' ? goToCraftsmanDetails : undefined}
+            onNextStep={role === 'craftsman' ? (e) => goToCraftsmanDetails(e) : undefined}
           />
         ) : (
           <CraftsmanDetailsStep

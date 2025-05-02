@@ -1,148 +1,238 @@
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { toast } from '@/components/ui/sonner';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Spinner } from "../ui/spinner";
 
-interface JobApplicationProps {
+const applicantSchema = z.object({
+  budget: z.number().min(1, { message: "يجب تحديد تكلفة مناسبة" }),
+  proposal: z.string().min(10, {
+    message: "يجب أن يكون العرض 10 أحرف على الأقل",
+  }),
+});
+
+type ApplicationFormValues = z.infer<typeof applicantSchema>;
+
+export interface JobApplicationProps {
   jobId: string;
-  onSuccess?: () => void;
+  isOpen: boolean; 
+  onClose: () => void;
+  onSuccess: () => void;
 }
 
-export const JobApplication = ({ jobId, onSuccess }: JobApplicationProps) => {
-  const { user } = useAuth();
-  const [price, setPrice] = useState('');
-  const [details, setDetails] = useState('');
-  const [loading, setLoading] = useState(false);
+export function JobApplication({
+  jobId, 
+  isOpen,
+  onClose,
+  onSuccess
+}: JobApplicationProps) {
+  const { user, isCraftsman } = useAuth();
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [jobData, setJobData] = useState<any>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!user) {
-      toast("يجب تسجيل الدخول كصنايعي أولاً", {
-        style: { backgroundColor: 'rgb(220, 38, 38)', color: 'white' }
+  const form = useForm<ApplicationFormValues>({
+    resolver: zodResolver(applicantSchema),
+    defaultValues: {
+      budget: 0,
+      proposal: "",
+    },
+  });
+
+  useEffect(() => {
+    const fetchJobDetails = async () => {
+      if (jobId) {
+        try {
+          const { data, error } = await supabase
+            .from("jobs")
+            .select("*, client:profiles(*)")
+            .eq("id", jobId)
+            .single();
+
+          if (error) throw error;
+          setJobData(data);
+        } catch (error) {
+          console.error("Error fetching job details:", error);
+        }
+      }
+    };
+
+    fetchJobDetails();
+  }, [jobId]);
+
+  const onSubmit = async (values: ApplicationFormValues) => {
+    if (!user || !user.id || !isCraftsman) {
+      toast({
+        title: "خطأ",
+        description: "يجب أن تكون صنايعي وتسجل الدخول لتقديم عرض",
+        variant: "destructive",
       });
       return;
     }
-    
-    if (!price || !details) {
-      toast("يرجى ملء جميع الحقول المطلوبة", {
-        style: { backgroundColor: 'rgb(220, 38, 38)', color: 'white' }
-      });
-      return;
-    }
-    
+
+    setIsSubmitting(true);
     try {
-      setLoading(true);
-      
-      // First check if the user already applied for this job
-      const { data: checkResult, error: checkError } = await supabase
-        .rpc('check_job_application', { 
+      // التحقق من وجود تقديم سابق
+      const { data: existingApplication, error: checkError } = await supabase
+        .rpc("check_job_application", {
+          craftsman_id_param: user.id,
           job_id_param: jobId,
-          craftsman_id_param: user.id
         });
-        
+
       if (checkError) throw checkError;
-      
-      if (checkResult && checkResult === true) {
-        toast("لقد قمت بالتقديم على هذه المهمة بالفعل", {
-          style: { backgroundColor: 'rgb(220, 38, 38)', color: 'white' }
+
+      if (existingApplication && existingApplication.length > 0) {
+        toast({
+          title: "لا يمكن التقديم",
+          description: "لقد قدمت عرضاً بالفعل على هذه المهمة",
+          variant: "destructive",
         });
+        setIsSubmitting(false);
         return;
       }
-      
-      // Insert the application
-      const { error } = await supabase
-        .from('job_applications')
+
+      // إنشاء طلب جديد
+      const { error: applicationError } = await supabase
+        .from("job_applications")
         .insert({
           job_id: jobId,
           craftsman_id: user.id,
-          price: parseFloat(price),
-          details: details,
-          status: 'pending'
+          proposal: values.proposal,
+          budget: values.budget,
+          status: "pending",
         });
-        
-      if (error) throw error;
 
-      // Get job information to send notification
-      const { data: jobData, error: jobError } = await supabase
-        .from('jobs')
-        .select('title, client_id')
-        .eq('id', jobId)
-        .single();
-        
-      if (jobError) throw jobError;
-      
-      // Create notification for the client
-      await supabase
-        .from('notifications')
-        .insert({
-          user_id: jobData.client_id,
-          title: 'لديك عرض جديد',
-          content: `لديك عرض جديد على مهمتك "${jobData.title}"`,
-          type: 'application',
-          related_id: jobId,
-          read: false,
-        });
-      
-      toast("تم إرسال عرضك بنجاح", {
-        style: { backgroundColor: 'rgb(22, 163, 74)', color: 'white' }
-      });
-      
-      setPrice('');
-      setDetails('');
-      
-      if (onSuccess) {
-        onSuccess();
+      if (applicationError) throw applicationError;
+
+      // إرسال إشعار للعميل
+      if (jobData && jobData.client && jobData.client.id) {
+        await supabase
+          .from("notifications")
+          .insert({
+            user_id: jobData.client.id,
+            title: "عرض جديد على مهمتك",
+            message: `تلقيت عرضاً جديداً على مهمة "${jobData.title}"`,
+            link: `/job/${jobId}`,
+            read: false,
+          });
       }
-      
+
+      toast({
+        title: "تم التقديم بنجاح",
+        description: "تم إرسال عرضك إلى العميل وسيتم إعلامك في حالة القبول",
+      });
+
+      form.reset();
+      onSuccess();
+      onClose();
     } catch (error) {
-      console.error('Error submitting application:', error);
-      toast("حدث خطأ أثناء إرسال العرض", {
-        style: { backgroundColor: 'rgb(220, 38, 38)', color: 'white' }
+      console.error("Error submitting application:", error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء تقديم العرض. يرجى المحاولة مرة أخرى.",
+        variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg border">
-      <h3 className="text-xl font-bold mb-4">قدم عرض سعر</h3>
-      
-      <div>
-        <Label htmlFor="price">السعر المقترح (بالجنيه)</Label>
-        <Input
-          id="price"
-          type="number"
-          placeholder="أدخل السعر المقترح"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          required
-        />
-      </div>
-      
-      <div>
-        <Label htmlFor="details">تفاصيل العرض</Label>
-        <Textarea
-          id="details"
-          placeholder="اكتب تفاصيل العرض والخدمات المقدمة..."
-          value={details}
-          onChange={(e) => setDetails(e.target.value)}
-          rows={5}
-          required
-        />
-      </div>
-      
-      <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? "جاري الإرسال..." : "إرسال العرض"}
-      </Button>
-    </form>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle className="text-center">تقديم عرض على المهمة</DialogTitle>
+        </DialogHeader>
+
+        {isSubmitting ? (
+          <div className="flex flex-col items-center justify-center py-8">
+            <Spinner size="lg" />
+            <p className="mt-4 text-center text-muted-foreground">
+              جاري إرسال العرض...
+            </p>
+          </div>
+        ) : (
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="budget"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>التكلفة المقترحة (جنيه مصري)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="1"
+                        placeholder="أدخل القيمة المناسبة"
+                        {...field}
+                        onChange={(e) => field.onChange(+e.target.value)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="proposal"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>تفاصيل العرض</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="اكتب تفاصيل عرضك وخبرتك في مثل هذا النوع من المهام..."
+                        className="min-h-[120px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onClose}
+                  className="w-full sm:w-auto"
+                >
+                  إلغاء
+                </Button>
+                <Button type="submit" className="w-full sm:w-auto">
+                  إرسال العرض
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        )}
+      </DialogContent>
+    </Dialog>
   );
-};
+}
 
 export default JobApplication;

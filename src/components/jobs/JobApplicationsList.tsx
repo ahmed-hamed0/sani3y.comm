@@ -1,61 +1,61 @@
 
 import { useState, useEffect } from "react";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "@/components/ui/sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { formatDistance } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
-import { Check, X, Star } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Spinner } from "@/components/ui/spinner";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { Check, X } from "lucide-react";
 
-interface JobApplicationsListProps {
+export interface JobApplicationsListProps {
   jobId: string;
-  clientId: string;
-  currentUserId?: string;
+  isMyJob: boolean;
+  onRefreshNeeded?: () => void;
 }
 
-interface JobApplication {
-  id: string;
-  price: number;
-  details: string;
-  status: string;
-  created_at: string;
-  craftsman: {
-    id: string;
-    first_name: string;
-    last_name: string;
-    avatar_url: string | null;
-    rating: number | null;
-    specialty: string | null;
-  };
-}
-
-export const JobApplicationsList = ({ 
-  jobId, 
-  clientId, 
-  currentUserId 
-}: JobApplicationsListProps) => {
-  const [applications, setApplications] = useState<JobApplication[]>([]);
+export function JobApplicationsList({ jobId, isMyJob, onRefreshNeeded }: JobApplicationsListProps) {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const isOwner = currentUserId === clientId;
+  const [jobData, setJobData] = useState<any>(null);
 
   useEffect(() => {
     const fetchApplications = async () => {
       try {
-        const { data, error } = await supabase
-          .rpc('get_job_applications', { job_id_param: jobId })
-          .order('created_at', { ascending: false });
-          
-        if (error) throw error;
+        const { data: job, error: jobError } = await supabase
+          .from("jobs")
+          .select("*, client:profiles(*)")
+          .eq("id", jobId)
+          .single();
         
-        setApplications(data as JobApplication[]);
+        if (jobError) throw jobError;
+        setJobData(job);
+
+        const { data, error } = await supabase
+          .rpc("get_job_applications", { job_id_param: jobId })
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+        setApplications(data as any[] || []);
       } catch (error) {
-        console.error('Error fetching applications:', error);
-        toast("حدث خطأ أثناء جلب العروض", {
-          style: { backgroundColor: 'rgb(220, 38, 38)', color: 'white' }
+        console.error("Error fetching applications:", error);
+        toast({
+          title: "خطأ",
+          description: "تعذر تحميل طلبات التقديم",
+          variant: "destructive",
         });
       } finally {
         setLoading(false);
@@ -63,250 +63,209 @@ export const JobApplicationsList = ({
     };
 
     fetchApplications();
-  }, [jobId]);
+  }, [jobId, toast]);
 
-  const handleAcceptApplication = async (applicationId: string) => {
-    try {
-      const { error } = await supabase
-        .from('job_applications')
-        .update({ status: 'accepted' })
-        .eq('id', applicationId);
-        
-      if (error) throw error;
-      
-      // Update other applications to rejected
-      await supabase
-        .from('job_applications')
-        .update({ status: 'rejected' })
-        .eq('job_id', jobId)
-        .neq('id', applicationId);
-        
-      // Update job status
-      await supabase
-        .from('jobs')
-        .update({ status: 'in_progress' })
-        .eq('id', jobId);
-      
-      // Find the accepted application to get craftsman info
-      const acceptedApp = applications.find(app => app.id === applicationId);
-      
-      if (acceptedApp) {
-        // Create notification for the craftsman
-        await supabase
-          .from('notifications')
-          .insert({
-            user_id: acceptedApp.craftsman.id,
-            title: 'تم قبول عرضك',
-            content: `تم قبول عرضك على المهمة!`,
-            type: 'application_accepted',
-            related_id: jobId,
-            read: false,
-          });
-      }
-      
-      // Update local state
-      setApplications(
-        applications.map((app) => ({
-          ...app,
-          status: app.id === applicationId ? 'accepted' : 'rejected',
-        }))
-      );
-      
-      toast("تم قبول العرض بنجاح", {
-        style: { backgroundColor: 'rgb(22, 163, 74)', color: 'white' }
-      });
-      
-    } catch (error) {
-      console.error('Error accepting application:', error);
-      toast("حدث خطأ أثناء قبول العرض", {
-        style: { backgroundColor: 'rgb(220, 38, 38)', color: 'white' }
-      });
-    }
-  };
-
-  const handleRejectApplication = async (applicationId: string) => {
-    try {
-      const { error } = await supabase
-        .from('job_applications')
-        .update({ status: 'rejected' })
-        .eq('id', applicationId);
-        
-      if (error) throw error;
-      
-      // Get the rejected application
-      const rejectedApp = applications.find(app => app.id === applicationId);
-      
-      if (rejectedApp) {
-        // Create notification for the craftsman
-        await supabase
-          .from('notifications')
-          .insert({
-            user_id: rejectedApp.craftsman.id,
-            title: 'تم رفض عرضك',
-            content: `للأسف، تم رفض عرضك على المهمة.`,
-            type: 'application_rejected',
-            related_id: jobId,
-            read: false,
-          });
-      }
-      
-      // Update local state
-      setApplications(
-        applications.map((app) => ({
-          ...app,
-          status: app.id === applicationId ? 'rejected' : app.status,
-        }))
-      );
-      
-      toast("تم رفض العرض بنجاح", {
-        style: { backgroundColor: 'rgb(220, 38, 38)', color: 'white' }
-      });
-      
-    } catch (error) {
-      console.error('Error rejecting application:', error);
-      toast("حدث خطأ أثناء رفض العرض", {
-        style: { backgroundColor: 'rgb(220, 38, 38)', color: 'white' }
-      });
-    }
-  };
-
-  const renderStars = (rating: number | null) => {
-    if (!rating) return null;
+  const handleAccept = async (applicationId: string, craftsmanId: string, craftsmanName: string) => {
+    if (!isMyJob || !user) return;
     
-    return (
-      <div className="flex items-center">
-        {Array(5)
-          .fill(0)
-          .map((_, i) => (
-            <Star
-              key={i}
-              className={`w-3 h-3 ${
-                i < Math.round(rating) ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
-              }`}
-            />
-          ))}
-        <span className="text-xs text-gray-500 mr-1">{rating.toFixed(1)}</span>
-      </div>
-    );
-  };
+    try {
+      // تحديث حالة الطلب إلى مقبول
+      const { error: updateError } = await supabase
+        .from("job_applications")
+        .update({ status: "accepted" })
+        .eq("id", applicationId);
+      
+      if (updateError) throw updateError;
+      
+      // تحديث حالة الوظيفة إلى قيد التنفيذ
+      const { error: jobUpdateError } = await supabase
+        .from("jobs")
+        .update({ status: "in_progress", assigned_to: craftsmanId })
+        .eq("id", jobId);
+      
+      if (jobUpdateError) throw jobUpdateError;
+      
+      // رفض جميع الطلبات الأخرى
+      const { error: rejectError } = await supabase
+        .from("job_applications")
+        .update({ status: "rejected" })
+        .eq("job_id", jobId)
+        .neq("id", applicationId);
+      
+      if (rejectError) throw rejectError;
 
-  const getBadgeStyle = (status: string) => {
-    switch (status) {
-      case 'accepted':
-        return "bg-green-500";
-      case 'rejected':
-        return "bg-red-500";
-      default:
-        return "bg-yellow-500";
+      // إرسال إشعار للصنايعي
+      await supabase
+        .from("notifications")
+        .insert({
+          user_id: craftsmanId,
+          title: "تم قبول عرضك",
+          message: `تم قبول عرضك على مهمة "${jobData?.title}"`,
+          link: `/job/${jobId}`,
+          read: false,
+        });
+      
+      toast({
+        title: "تم قبول العرض",
+        description: `تم قبول عرض ${craftsmanName} وإسناد المهمة له`,
+      });
+      
+      // تحديث البيانات
+      if (onRefreshNeeded) {
+        onRefreshNeeded();
+      }
+      
+      // تحديث قائمة الطلبات
+      setApplications(prevApps => 
+        prevApps.map(app => ({
+          ...app,
+          status: app.id === applicationId ? "accepted" : "rejected"
+        }))
+      );
+    } catch (error) {
+      console.error("Error accepting application:", error);
+      toast({
+        title: "خطأ",
+        description: "تعذر قبول العرض. يرجى المحاولة مرة أخرى.",
+        variant: "destructive",
+      });
     }
   };
 
-  const getStatusText = (status: string) => {
+  const handleReject = async (applicationId: string, craftsmanId: string, craftsmanName: string) => {
+    if (!isMyJob || !user) return;
+    
+    try {
+      const { error } = await supabase
+        .from("job_applications")
+        .update({ status: "rejected" })
+        .eq("id", applicationId);
+      
+      if (error) throw error;
+      
+      // إرسال إشعار للصنايعي
+      await supabase
+        .from("notifications")
+        .insert({
+          user_id: craftsmanId,
+          title: "تم رفض عرضك",
+          message: `تم رفض عرضك على مهمة "${jobData?.title}"`,
+          link: `/job/${jobId}`,
+          read: false,
+        });
+      
+      toast({
+        title: "تم رفض العرض",
+        description: `تم رفض عرض ${craftsmanName} بنجاح`,
+      });
+      
+      // تحديث قائمة الطلبات
+      setApplications(prevApps => 
+        prevApps.map(app => 
+          app.id === applicationId ? { ...app, status: "rejected" } : app
+        )
+      );
+    } catch (error) {
+      console.error("Error rejecting application:", error);
+      toast({
+        title: "خطأ",
+        description: "تعذر رفض العرض. يرجى المحاولة مرة أخرى.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'accepted':
-        return "تم القبول";
-      case 'rejected':
-        return "مرفوض";
+      case "accepted":
+        return <Badge className="bg-green-500">تم القبول</Badge>;
+      case "rejected":
+        return <Badge variant="destructive">مرفوض</Badge>;
       default:
-        return "قيد الانتظار";
+        return <Badge variant="outline">قيد الانتظار</Badge>;
     }
   };
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-32 w-full" />
+      <div className="flex justify-center items-center py-12">
+        <Spinner size="lg" />
       </div>
     );
   }
 
   if (applications.length === 0) {
     return (
-      <div className="text-center py-8">
-        <p className="text-gray-500">لا توجد عروض على هذه المهمة حتى الآن.</p>
-      </div>
+      <Card>
+        <CardContent className="pt-6 text-center">
+          <p className="text-muted-foreground">لا توجد طلبات تقديم على هذه المهمة حتى الآن.</p>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
     <div className="space-y-4">
       {applications.map((application) => (
-        <Card key={application.id} className="p-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex items-center">
-              <Avatar className="h-12 w-12">
-                <AvatarImage src={application.craftsman.avatar_url || ""} />
-                <AvatarFallback>
-                  {application.craftsman.first_name?.[0]}
-                  {application.craftsman.last_name?.[0]}
-                </AvatarFallback>
-              </Avatar>
-            </div>
-
-            <div className="flex-1">
-              <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+        <Card key={application.id} className="overflow-hidden">
+          <CardHeader className="pb-2">
+            <div className="flex justify-between items-start">
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarImage src={application.craftsman?.avatar_url || ""} />
+                  <AvatarFallback>
+                    {application.craftsman?.full_name?.[0] || "C"}
+                  </AvatarFallback>
+                </Avatar>
                 <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-medium">
-                      {application.craftsman.first_name} {application.craftsman.last_name}
-                    </h3>
-                    <Badge variant="outline">{application.craftsman.specialty}</Badge>
-                  </div>
-                  {renderStars(application.craftsman.rating)}
-                </div>
-
-                <Badge className={getBadgeStyle(application.status)}>
-                  {getStatusText(application.status)}
-                </Badge>
-              </div>
-
-              <p className="text-gray-700 mb-2">{application.details}</p>
-
-              <div className="flex flex-wrap items-center justify-between gap-2 mt-4">
-                <div>
-                  <span className="font-bold text-xl text-primary">
-                    {application.price} جنيه
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2 text-sm text-gray-500">
-                  <span>
-                    {formatDistance(new Date(application.created_at), new Date(), {
-                      addSuffix: true,
-                      locale: ar,
-                    })}
-                  </span>
+                  <CardTitle className="text-lg">
+                    {application.craftsman?.full_name || "صنايعي"}
+                  </CardTitle>
+                  <CardDescription>
+                    {application.craftsman?.specialty || "متخصص"}
+                  </CardDescription>
                 </div>
               </div>
-
-              {isOwner && application.status === 'pending' && (
-                <div className="flex justify-end gap-2 mt-4">
-                  <Button 
-                    variant="destructive" 
-                    size="sm" 
-                    onClick={() => handleRejectApplication(application.id)}
-                  >
-                    <X className="ml-1 h-4 w-4" />
-                    رفض
-                  </Button>
-                  <Button 
-                    variant="default" 
-                    size="sm" 
-                    onClick={() => handleAcceptApplication(application.id)}
-                  >
-                    <Check className="ml-1 h-4 w-4" />
-                    قبول
-                  </Button>
-                </div>
-              )}
+              <div className="flex flex-col items-end gap-1">
+                {getStatusBadge(application.status)}
+                <span className="text-sm text-muted-foreground">
+                  {formatDistanceToNow(new Date(application.created_at), { addSuffix: true, locale: ar })}
+                </span>
+              </div>
             </div>
-          </div>
+          </CardHeader>
+          <CardContent className="pb-3">
+            <div className="mb-2">
+              <span className="font-medium">السعر المقترح: </span>
+              <span className="text-primary">{application.budget} جنيه</span>
+            </div>
+            <p className="text-gray-700">{application.proposal}</p>
+          </CardContent>
+          {isMyJob && application.status === "pending" && (
+            <CardFooter className="border-t pt-3 flex justify-end gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                onClick={() => handleReject(application.id, application.craftsman?.id, application.craftsman?.full_name)}
+              >
+                <X className="mr-1 h-4 w-4" />
+                رفض
+              </Button>
+              <Button
+                size="sm"
+                className="bg-green-600 hover:bg-green-700"
+                onClick={() => handleAccept(application.id, application.craftsman?.id, application.craftsman?.full_name)}
+              >
+                <Check className="mr-1 h-4 w-4" />
+                قبول
+              </Button>
+            </CardFooter>
+          )}
         </Card>
       ))}
     </div>
   );
-};
+}
 
 export default JobApplicationsList;

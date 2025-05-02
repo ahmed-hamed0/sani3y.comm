@@ -13,10 +13,10 @@ const CallToAction = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button asChild size="lg" className="bg-secondary hover:bg-secondary/90 text-black">
+            <Button asChild size="lg" className="bg-white text-black hover:bg-white/90">
               <Link to="/sign-up">تسجيل حساب جديد</Link>
             </Button>
-            <Button asChild variant="outline" size="lg" className="bg-accent-dark hover:bg-accent-dark/90 text-white">
+            <Button asChild variant="outline" size="lg" className="bg-white text-black hover:bg-white/90 border-white">
               <Link to="/about">معرفة المزيد</Link>
             </Button>
           </div>

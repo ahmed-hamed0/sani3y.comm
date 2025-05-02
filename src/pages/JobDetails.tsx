@@ -1,160 +1,187 @@
 
-import { useParams, Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import MainLayout from '@/components/layouts/MainLayout';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
-import { Spinner } from '@/components/ui/spinner';
-import { Clock, Calendar, MapPin } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import JobApplication from '@/components/jobs/JobApplication';
-import JobApplicationsList from '@/components/jobs/JobApplicationsList';
+import { Spinner } from '@/components/ui/spinner';
+import { useToast } from '@/hooks/use-toast';
+import { BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator, Breadcrumb, BreadcrumbList } from '@/components/ui/breadcrumb';
+import { MapPin, CalendarClock, User, DollarSign, Clock, CheckCircle2, XCircle, AlertCircle, Home, ShieldCheck } from 'lucide-react';
+import { formatDistanceToNow, parseISO } from 'date-fns';
+import { ar } from 'date-fns/locale';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { JobApplication } from '@/components/jobs/JobApplication';
+import { JobApplicationsList } from '@/components/jobs/JobApplicationsList';
 
-interface Job {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  budget_min: number | null;
-  budget_max: number | null;
-  location: {
-    governorate: string;
-    city: string;
-    address?: string;
-  };
-  client: {
-    id: string;
-    name: string;
-    avatar?: string;
-  };
-  status: 'open' | 'assigned' | 'completed';
-  postedAt: Date;
-}
+type JobStatus = 'open' | 'in_progress' | 'completed' | 'cancelled';
+
+const getStatusBadge = (status: JobStatus) => {
+  switch (status) {
+    case 'open':
+      return <Badge className="bg-blue-500">متاح</Badge>;
+    case 'in_progress':
+      return <Badge className="bg-amber-500">قيد التنفيذ</Badge>;
+    case 'completed':
+      return <Badge className="bg-green-500">مكتمل</Badge>;
+    case 'cancelled':
+      return <Badge variant="destructive">ملغي</Badge>;
+    default:
+      return <Badge variant="outline">غير معروف</Badge>;
+  }
+};
+
+const getStatusIcon = (status: JobStatus) => {
+  switch (status) {
+    case 'open':
+      return <Clock className="w-12 h-12 text-blue-500" />;
+    case 'in_progress':
+      return <AlertCircle className="w-12 h-12 text-amber-500" />;
+    case 'completed':
+      return <CheckCircle2 className="w-12 h-12 text-green-500" />;
+    case 'cancelled':
+      return <XCircle className="w-12 h-12 text-red-500" />;
+    default:
+      return <AlertCircle className="w-12 h-12 text-gray-500" />;
+  }
+};
 
 const JobDetails = () => {
   const { id } = useParams<{ id: string }>();
-  const { user } = useAuth();
-  const [job, setJob] = useState<Job | null>(null);
+  const { user, isClient, isCraftsman, loading: authLoading } = useAuth();
+  const { toast } = useToast();
+  
+  const [job, setJob] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isApplicationDialogOpen, setIsApplicationDialogOpen] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAssignedCraftsman, setIsAssignedCraftsman] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
 
   useEffect(() => {
-    window.scrollTo(0, 0);
-
     const fetchJobDetails = async () => {
       if (!id) return;
       
       try {
-        setLoading(true);
-
-        // Fetch job data and client profile in separate queries
-        const { data: jobData, error: jobError } = await supabase
+        const { data, error } = await supabase
           .from('jobs')
           .select(`
-            id,
-            title,
-            description,
-            category,
-            budget_min,
-            budget_max,
-            governorate,
-            city,
-            address,
-            status,
-            created_at,
-            client_id
+            *,
+            client:profiles!jobs_client_id_fkey(*), 
+            assigned_craftsman:profiles!jobs_assigned_to_fkey(*)
           `)
           .eq('id', id)
           .single();
-
-        if (jobError) {
-          console.error('Error fetching job details:', jobError);
-          setError('حدث خطأ أثناء تحميل بيانات المهمة');
-          return;
-        }
-
-        if (!jobData) {
-          setError('لم يتم العثور على المهمة');
-          return;
-        }
-
-        // Fetch client profile data separately
-        const { data: clientData, error: clientError } = await supabase
-          .from('profiles')
-          .select('id, full_name, avatar_url')
-          .eq('id', jobData.client_id)
-          .single();
-
-        if (clientError) {
-          console.error('Error fetching client profile:', clientError);
-          // Continue with job data even if client data is missing
-        }
-
-        const formattedJob: Job = {
-          id: jobData.id,
-          title: jobData.title,
-          description: jobData.description,
-          category: jobData.category,
-          budget_min: jobData.budget_min,
-          budget_max: jobData.budget_max,
-          location: {
-            governorate: jobData.governorate,
-            city: jobData.city,
-            address: jobData.address
-          },
-          client: {
-            id: clientData?.id || jobData.client_id,
-            name: clientData?.full_name || 'مستخدم غير معروف',
-            avatar: clientData?.avatar_url
-          },
-          status: jobData.status as 'open' | 'assigned' | 'completed',
-          postedAt: new Date(jobData.created_at)
-        };
-
-        setJob(formattedJob);
-
-        // Check if current user has applied to this job
-        if (user && user.role === 'craftsman') {
-          const { data: applicationData } = await supabase
-            .from('job_applications')
-            .select('id')
-            .eq('job_id', id)
-            .eq('craftsman_id', user.id)
-            .maybeSingle();
+        
+        if (error) throw error;
+        setJob(data);
+        
+        if (user && data) {
+          // Check if the current user is the assigned craftsman
+          if (data.assigned_to === user.id) {
+            setIsAssignedCraftsman(true);
+          }
           
-          setHasApplied(!!applicationData);
+          // Check if the user has already applied
+          if (isCraftsman) {
+            const { data: appData, error: appError } = await supabase
+              .rpc('check_job_application', { 
+                craftsman_id_param: user.id,
+                job_id_param: id
+              });
+            
+            if (appError) throw appError;
+            setHasApplied(appData && appData.length > 0);
+          }
         }
-      } catch (err) {
-        console.error('Error in fetchJobDetails:', err);
-        setError('حدث خطأ غير متوقع');
+      } catch (error) {
+        console.error('Error fetching job:', error);
+        toast({
+          title: 'خطأ',
+          description: 'تعذر تحميل تفاصيل المهمة',
+          variant: 'destructive'
+        });
       } finally {
         setLoading(false);
       }
     };
 
-    fetchJobDetails();
-  }, [id, user]);
+    if (!authLoading) {
+      fetchJobDetails();
+    }
+  }, [id, user, authLoading, isCraftsman, refreshTrigger, toast]);
 
-  const handleApplicationSubmit = () => {
-    setHasApplied(true);
+  const refreshJobDetails = () => {
+    setRefreshTrigger(prev => prev + 1);
   };
 
-  // Helper function to format date
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('ar-EG', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    });
+  const handleApplyClick = () => {
+    if (!user) {
+      toast({
+        title: 'تسجيل الدخول مطلوب',
+        description: 'يجب تسجيل الدخول للتقدم لهذه المهمة',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    if (!isCraftsman) {
+      toast({
+        title: 'غير مسموح',
+        description: 'فقط الصنايعية يمكنهم التقدم للمهام',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    setIsDialogOpen(true);
   };
 
-  if (loading) {
+  const handleMarkComplete = async () => {
+    if (!job || !user || !isAssignedCraftsman) return;
+    
+    try {
+      const { error } = await supabase
+        .from('jobs')
+        .update({ status: 'completed' })
+        .eq('id', job.id);
+      
+      if (error) throw error;
+      
+      // Send notification to client
+      await supabase
+        .from('notifications')
+        .insert({
+          user_id: job.client_id,
+          title: 'تم اكتمال المهمة',
+          message: `تم الانتهاء من المهمة "${job.title}" ويمكنك الآن مراجعتها وتقييم الصنايعي`,
+          link: `/job/${job.id}`
+        });
+      
+      toast({
+        title: 'تم تحديث الحالة',
+        description: 'تم تحديد المهمة كمكتملة بنجاح'
+      });
+      
+      refreshJobDetails();
+    } catch (error) {
+      console.error('Error updating job:', error);
+      toast({
+        title: 'خطأ',
+        description: 'تعذر تحديث حالة المهمة',
+        variant: 'destructive'
+      });
+    }
+  };
+  
+  if (loading || authLoading) {
     return (
       <MainLayout>
         <div className="container-custom py-8">
-          <div className="flex justify-center items-center h-64">
+          <div className="flex justify-center items-center min-h-[50vh]">
             <Spinner size="lg" />
           </div>
         </div>
@@ -162,13 +189,15 @@ const JobDetails = () => {
     );
   }
 
-  if (error || !job) {
+  if (!job) {
     return (
       <MainLayout>
         <div className="container-custom py-8">
-          <div className="bg-white rounded-lg shadow-md p-8 text-center">
-            <h2 className="text-2xl font-bold mb-2">لم يتم العثور على المهمة</h2>
-            <p className="text-gray-600 mb-6">{error || 'المهمة التي تبحث عنها غير موجودة أو تم حذفها'}</p>
+          <div className="text-center py-12">
+            <h1 className="text-2xl font-bold mb-4">المهمة غير موجودة</h1>
+            <p className="mb-6 text-muted-foreground">
+              لا يمكن العثور على المهمة المطلوبة. قد تكون تم حذفها أو ربما أدخلت رابطاً خاطئاً.
+            </p>
             <Button asChild>
               <Link to="/jobs">العودة إلى قائمة المهام</Link>
             </Button>
@@ -178,138 +207,255 @@ const JobDetails = () => {
     );
   }
 
-  const isMine = user?.id === job.client.id;
-  const isCraftsman = user?.role === 'craftsman';
-  const isOpen = job.status === 'open';
+  const isMyJob = user && job.client_id === user.id;
+  const isOpenJob = job.status === 'open';
+  const isInProgressJob = job.status === 'in_progress';
+  const isCompletedJob = job.status === 'completed';
+  const isClient = user && job.client_id === user.id;
+  const canApply = isCraftsman && isOpenJob && !hasApplied && !isMyJob;
 
   return (
     <MainLayout>
       <div className="container-custom py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Job Details */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-              <div className="flex justify-between items-start flex-wrap gap-4 mb-6">
-                <h1 className="text-2xl md:text-3xl font-bold">{job.title}</h1>
-                
-                <div className="flex gap-3">
-                  <span className={`
-                    px-4 py-1 rounded-full text-sm
-                    ${job.status === 'open' ? 'bg-green-100 text-green-800' : 
-                     job.status === 'assigned' ? 'bg-blue-100 text-blue-800' : 
-                     'bg-gray-100 text-gray-800'}
-                  `}>
-                    {job.status === 'open' ? 'متاح' : 
-                     job.status === 'assigned' ? 'قيد التنفيذ' : 
-                     'مكتمل'}
+        {/* Breadcrumbs */}
+        <Breadcrumb className="mb-6">
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link to="/"><Home className="w-4 h-4" /></Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link to="/jobs">المهام</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>{job.title}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+        
+        {/* Job Header */}
+        <div className="mb-8">
+          <div className="flex justify-between items-start flex-wrap gap-4 mb-4">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">{job.title}</h1>
+              <div className="flex items-center flex-wrap gap-x-6 gap-y-2">
+                <div className="flex items-center text-muted-foreground">
+                  <MapPin className="w-4 h-4 ml-1" />
+                  <span>{job.governorate}{job.city ? ` - ${job.city}` : ''}</span>
+                </div>
+                <div className="flex items-center text-muted-foreground">
+                  <CalendarClock className="w-4 h-4 ml-1" />
+                  <span>
+                    {job.created_at ? formatDistanceToNow(parseISO(job.created_at), { 
+                      addSuffix: true, 
+                      locale: ar 
+                    }) : ''}
                   </span>
-                  
-                  <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm">
-                    {job.category}
-                  </span>
                 </div>
+                {job.budget > 0 && (
+                  <div className="flex items-center text-primary font-medium">
+                    <DollarSign className="w-4 h-4 ml-1" />
+                    <span>{job.budget} جنيه</span>
+                  </div>
+                )}
               </div>
-              
-              <div className="flex flex-wrap gap-4 text-gray-600 mb-6">
-                <div className="flex items-center">
-                  <Calendar className="h-5 w-5 ml-2" />
-                  <span>تاريخ النشر: {formatDate(job.postedAt)}</span>
-                </div>
-                
-                <div className="flex items-center">
-                  <MapPin className="h-5 w-5 ml-2" />
-                  <span>{job.location.city}، {job.location.governorate}</span>
-                </div>
-              </div>
-              
-              {job.budget_min && job.budget_max && (
-                <div className="bg-gray-50 rounded-md p-4 mb-6">
-                  <h2 className="font-semibold mb-2">الميزانية المتوقعة</h2>
-                  <p className="text-primary text-lg font-semibold">
-                    {job.budget_min} - {job.budget_max} ج.م
-                  </p>
-                </div>
-              )}
-              
-              <div className="mb-8">
-                <h2 className="text-xl font-bold mb-4">تفاصيل المهمة</h2>
-                <div className="prose max-w-none">
-                  <p className="text-gray-700 whitespace-pre-line">{job.description}</p>
-                </div>
-              </div>
-              
-              {job.location.address && (
-                <div className="mb-6">
-                  <h2 className="text-xl font-bold mb-3">العنوان</h2>
-                  <p className="text-gray-700">{job.location.address}</p>
-                </div>
-              )}
-              
-              {isMine ? (
-                <div className="flex flex-wrap gap-3 justify-end">
-                  <Button variant="outline">تعديل المهمة</Button>
-                  {isOpen && <Button variant="destructive">إلغاء المهمة</Button>}
-                </div>
-              ) : (
-                <div className="flex justify-center mt-6">
-                  {isOpen && isCraftsman ? (
-                    hasApplied ? (
-                      <Button disabled>تم التقديم بالفعل</Button>
-                    ) : (
-                      <Button 
-                        className="min-w-[200px]"
-                        onClick={() => setIsApplicationDialogOpen(true)}
-                      >
-                        تقدم للمهمة
-                      </Button>
-                    )
-                  ) : (
-                    <Button disabled>تم إغلاق المهمة</Button>
-                  )}
-                </div>
-              )}
             </div>
+            <div className="flex flex-col items-end">
+              {getStatusBadge(job.status as JobStatus)}
+            </div>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Job Description */}
+            <Card>
+              <CardHeader>
+                <CardTitle>وصف المهمة</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="prose prose-sm max-w-none">
+                  {job.description.split('\n').map((paragraph: string, i: number) => (
+                    <p key={i} className="mb-4">{paragraph}</p>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
             
-            {/* Display job applications for the client */}
-            <JobApplicationsList jobId={job.id} isMyJob={isMine} />
+            {/* Applications Section (visible to job owner) */}
+            {isMyJob && (
+              <div className="space-y-4">
+                <h2 className="text-xl font-semibold">العروض المقدمة</h2>
+                <JobApplicationsList 
+                  jobId={job.id} 
+                  isMyJob={isMyJob} 
+                  onRefreshNeeded={refreshJobDetails}
+                />
+              </div>
+            )}
           </div>
           
-          {/* Client Info */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-md p-6 sticky top-24">
-              <h2 className="text-xl font-bold mb-4">العميل</h2>
-              
-              <div className="flex items-center gap-4 mb-6">
-                <img 
-                  src={job.client.avatar || '/placeholder.svg'} 
-                  alt={job.client.name}
-                  className="w-16 h-16 rounded-full object-cover"
-                />
-                <div>
-                  <h3 className="font-semibold text-lg">{job.client.name}</h3>
-                  <p className="text-gray-500 text-sm">عميل</p>
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Status Card */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle>حالة المهمة</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col items-center text-center">
+                  {getStatusIcon(job.status as JobStatus)}
+                  <h3 className="mt-2 mb-1 font-semibold">
+                    {
+                      job.status === 'open' ? 'متاحة للتقديم' :
+                      job.status === 'in_progress' ? 'قيد التنفيذ' :
+                      job.status === 'completed' ? 'تم الانتهاء' :
+                      'تم إلغاؤها'
+                    }
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {
+                      job.status === 'open' ? 'هذه المهمة متاحة حالياً للتقديم من الصنايعية' :
+                      job.status === 'in_progress' ? 'هذه المهمة قيد التنفيذ حالياً' :
+                      job.status === 'completed' ? 'تم الانتهاء من هذه المهمة بنجاح' :
+                      'تم إلغاء هذه المهمة'
+                    }
+                  </p>
                 </div>
-              </div>
-              
-              {!isMine && (
-                <div className="flex flex-col gap-3">
-                  <Button asChild>
-                    <Link to={`/profile/${job.client.id}`}>عرض الملف الشخصي</Link>
+              </CardContent>
+              {job.status === 'open' && canApply && (
+                <CardFooter>
+                  <Button 
+                    className="w-full"
+                    onClick={handleApplyClick}
+                  >
+                    تقديم عرض
                   </Button>
-                  <Button variant="outline">إرسال رسالة</Button>
-                </div>
+                </CardFooter>
               )}
-            </div>
+              {isAssignedCraftsman && isInProgressJob && (
+                <CardFooter>
+                  <Button 
+                    className="w-full bg-green-600 hover:bg-green-700"
+                    onClick={handleMarkComplete}
+                  >
+                    <CheckCircle2 className="ml-1 h-4 w-4" />
+                    تم الانتهاء من المهمة
+                  </Button>
+                </CardFooter>
+              )}
+            </Card>
+            
+            {/* Client Info Card */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle>معلومات العميل</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center space-x-4 space-x-reverse">
+                  <Avatar>
+                    <AvatarImage src={job.client?.avatar_url || ""} />
+                    <AvatarFallback>
+                      {job.client?.full_name ? job.client.full_name[0] : "C"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h3 className="font-medium">{job.client?.full_name || "عميل"}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {job.client?.governorate && job.client?.city ? 
+                        `${job.client.governorate} - ${job.client.city}` : 
+                        job.client?.governorate || "غير محدد"}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="border-t pt-4">
+                <div className="w-full flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">عضو منذ</span>
+                  <span className="text-sm">
+                    {job.client?.created_at ? 
+                      formatDistanceToNow(parseISO(job.client.created_at), { 
+                        addSuffix: false, 
+                        locale: ar 
+                      }) : "غير معروف"}
+                  </span>
+                </div>
+              </CardFooter>
+            </Card>
+            
+            {/* Assigned Craftsman Card (if in progress) */}
+            {job.assigned_to && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle>الصنايعي المكلف</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center space-x-4 space-x-reverse">
+                    <Avatar>
+                      <AvatarImage src={job.assigned_craftsman?.avatar_url || ""} />
+                      <AvatarFallback>
+                        {job.assigned_craftsman?.full_name ? 
+                          job.assigned_craftsman.full_name[0] : "C"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h3 className="font-medium">{job.assigned_craftsman?.full_name || "صنايعي"}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {job.assigned_craftsman?.specialty || "غير محدد"}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter className="justify-center">
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    asChild
+                  >
+                    <Link to={`/craftsman/${job.assigned_to}`} className="flex items-center">
+                      <User className="ml-1 h-4 w-4" />
+                      عرض الملف الشخصي
+                    </Link>
+                  </Button>
+                </CardFooter>
+              </Card>
+            )}
+            
+            {/* Security Note */}
+            <Card className="bg-gray-50">
+              <CardContent className="pt-6">
+                <div className="flex items-center text-amber-700 mb-2">
+                  <ShieldCheck className="ml-2 w-5 h-5" />
+                  <CardTitle className="text-base">نصائح الأمان</CardTitle>
+                </div>
+                <CardDescription className="text-gray-600 text-xs">
+                  <ul className="list-disc pr-4 space-y-1">
+                    <li>قم بالتواصل مع الصنايعية عبر المنصة فقط</li>
+                    <li>لا تقم بالدفع قبل اكتمال العمل والتأكد من جودته</li>
+                    <li>احرص على مراجعة تقييمات الصنايعية قبل قبول العروض</li>
+                  </ul>
+                </CardDescription>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
       
-      {/* Application Dialog */}
-      <JobApplication 
+      {/* Apply Dialog */}
+      <JobApplication
         jobId={job.id}
-        isOpen={isApplicationDialogOpen}
-        onClose={() => setIsApplicationDialogOpen(false)}
-        onSuccess={handleApplicationSubmit}
+        isOpen={isDialogOpen}
+        onClose={() => setIsDialogOpen(false)}
+        onSuccess={() => {
+          setHasApplied(true);
+          refreshJobDetails();
+        }}
       />
     </MainLayout>
   );

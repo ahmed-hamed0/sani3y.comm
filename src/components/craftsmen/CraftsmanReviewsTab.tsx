@@ -25,22 +25,20 @@ interface CraftsmanReviewsTabProps {
   craftsmanId: string;
 }
 
-const CraftsmanReviewsTab = ({ craftsmanId }: CraftsmanReviewsTabProps) => {
+export const CraftsmanReviewsTab = ({ craftsmanId }: CraftsmanReviewsTabProps) => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchReviews = async () => {
       try {
-        // Using the craftsmanId as a string parameter is fine here
         const { data, error } = await supabase
           .rpc('get_craftsman_reviews', { craftsman_id: craftsmanId })
           .order('created_at', { ascending: false });
 
         if (error) throw error;
         
-        // Type assertion since we know the data structure will match Review[]
-        setReviews(data as Review[]);
+        setReviews(data as unknown as Review[]);
       } catch (error) {
         console.error('Error fetching reviews:', error);
       } finally {
@@ -123,4 +121,5 @@ const CraftsmanReviewsTab = ({ craftsmanId }: CraftsmanReviewsTabProps) => {
   );
 };
 
+// Also export as default for backwards compatibility
 export default CraftsmanReviewsTab;

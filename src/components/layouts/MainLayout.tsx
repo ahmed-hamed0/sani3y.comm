@@ -39,6 +39,14 @@ const MainLayout = ({ children }: MainLayoutProps) => {
     }
   };
 
+  const handleSignupAsCraftsman = () => {
+    navigate('/sign-up', { state: { role: 'craftsman' } });
+  };
+
+  const handleSignupAsClient = () => {
+    navigate('/sign-up', { state: { role: 'client' } });
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-neutral">
       {/* Header/Navbar */}
@@ -95,8 +103,11 @@ const MainLayout = ({ children }: MainLayoutProps) => {
                   <Button asChild variant="ghost">
                     <Link to="/sign-in">تسجيل الدخول</Link>
                   </Button>
-                  <Button asChild>
-                    <Link to="/sign-up">تسجيل جديد</Link>
+                  <Button asChild variant="outline" onClick={handleSignupAsClient}>
+                    <Link to="/sign-up">سجل كعميل</Link>
+                  </Button>
+                  <Button asChild className="bg-white text-black hover:bg-white/90" onClick={handleSignupAsCraftsman}>
+                    <Link to="/sign-up">سجل كصنايعي</Link>
                   </Button>
                 </>
               )}
@@ -144,8 +155,11 @@ const MainLayout = ({ children }: MainLayoutProps) => {
                     </div>
                   ) : (
                     <div className="flex flex-col space-y-3">
-                      <Button asChild>
-                        <Link to="/sign-up">تسجيل جديد</Link>
+                      <Button asChild className="bg-white text-black hover:bg-white/90" onClick={handleSignupAsCraftsman}>
+                        <Link to="/sign-up">سجل كصنايعي</Link>
+                      </Button>
+                      <Button asChild variant="outline" onClick={handleSignupAsClient}>
+                        <Link to="/sign-up">سجل كعميل</Link>
                       </Button>
                       <Button asChild variant="outline">
                         <Link to="/sign-in">تسجيل الدخول</Link>
@@ -183,8 +197,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
             </div>
             <div>
               <h3 className="text-xl font-bold mb-4">تواصل معنا</h3>
-              <p className="text-gray-300">البريد الإلكتروني: info@sanaaie.com</p>
-              <p className="text-gray-300">هاتف: 01234567890</p>
+              <p className="text-gray-300">البريد الإلكتروني: sani3y.com@gmail.com</p>
             </div>
           </div>
           <div className="mt-8 pt-6 border-t border-gray-700 text-center text-gray-400">
