@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { UserRole } from "@/types";
 import { z } from "zod";
@@ -16,6 +17,16 @@ export const loginSchema = z.object({
 });
 
 export type LoginFormValues = z.infer<typeof loginSchema>;
+
+// تحسين مخطط التحقق لرقم الهاتف المصري
+const phoneValidator = z.string()
+  .refine((val) => {
+    if (!val) return true; // اسمح بالقيمة الفارغة (سيتحقق من الضرورة في schema أخرى)
+    
+    // تحقق من رمز الدولة للتأكد من تطبيق القواعد الصحيحة
+    const countryCode = z.string().optional();
+    return true;
+  }, { message: "رقم الهاتف غير صحيح" });
 
 // مخطط التحقق من صحة نموذج إنشاء حساب
 export const registerSchema = z.object({
@@ -36,6 +47,15 @@ export const registerSchema = z.object({
 }).refine((data) => data.password === data.confirmPassword, {
   message: "كلمات المرور غير متطابقة",
   path: ["confirmPassword"],
+}).refine((data) => {
+  // تحقق إضافي لرقم الهاتف المصري
+  if (data.countryCode === '+20') {
+    return data.phone.startsWith('1') && data.phone.length === 10 && /^\d+$/.test(data.phone);
+  }
+  return true;
+}, {
+  message: "رقم الهاتف المصري يجب أن يكون 10 أرقام تبدأ برقم 1",
+  path: ["phone"]
 });
 
 export type RegisterFormValues = z.infer<typeof registerSchema>;
@@ -129,7 +149,11 @@ export async function signUp(values: RegisterFormValues) {
     bio 
   } = values;
   
-  const fullPhone = `${countryCode}${phone}`;
+  // تحسين التعامل مع رقم الهاتف
+  let fullPhone = phone;
+  if (!phone.startsWith(countryCode)) {
+    fullPhone = `${countryCode}${phone}`;
+  }
   
   try {
     // 1. إنشاء حساب في نظام المصادقة

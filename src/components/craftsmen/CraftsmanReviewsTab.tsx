@@ -29,13 +29,16 @@ export function CraftsmanReviewsTab({ craftsmanId }: CraftsmanReviewsTabProps) {
   useEffect(() => {
     const fetchReviews = async () => {
       try {
-        // Fix: Use any as intermediate type and then cast to known type
+        // إصلاح: استخدام as any كنوع وسيط ثم تحويله إلى النوع المعروف
         const { data, error } = await supabase
           .rpc('get_craftsman_reviews', { p_craftsman_id: craftsmanId })
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false }) as { 
+            data: ReviewData[] | null; 
+            error: any 
+          };
         
         if (error) throw error;
-        setReviews(Array.isArray(data) ? data as ReviewData[] : []);
+        setReviews(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error('Error fetching reviews:', error);
       } finally {
