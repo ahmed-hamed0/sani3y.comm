@@ -4,8 +4,10 @@ import { Search, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { CATEGORIES, CRAFTSMEN } from '@/data/mockData';
+import { useAuth } from '@/hooks/useAuth';
 
 const Hero = () => {
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
 
@@ -35,23 +37,47 @@ const Hero = () => {
               منصة تربط بين الصنايعية والعملاء بطريقة سهلة وموثوقة
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <Button 
-                asChild 
-                className="bg-secondary hover:bg-secondary-dark text-black text-lg"
-                size="lg"
-              >
-                <Link to="/sign-up">سجل كعميل</Link>
-              </Button>
-              <Button 
-                asChild
-                variant="outline" 
-                className="bg-accent hover:bg-accent-dark text-white hover:text-white text-lg"
-                size="lg"
-              >
-                <Link to="/sign-up?role=craftsman">سجل كصنايعي</Link>
-              </Button>
-            </div>
+            {/* Only show registration links if not logged in */}
+            {!user && (
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                <Button 
+                  asChild 
+                  className="bg-secondary hover:bg-secondary-dark text-black text-lg"
+                  size="lg"
+                >
+                  <Link to="/sign-up">سجل كعميل</Link>
+                </Button>
+                <Button 
+                  asChild
+                  variant="outline" 
+                  className="bg-accent hover:bg-accent-dark text-white hover:text-white text-lg"
+                  size="lg"
+                >
+                  <Link to="/sign-up?role=craftsman">سجل كصنايعي</Link>
+                </Button>
+              </div>
+            )}
+            
+            {/* If logged in, show action buttons instead */}
+            {user && (
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                <Button 
+                  asChild 
+                  className="bg-secondary hover:bg-secondary-dark text-black text-lg"
+                  size="lg"
+                >
+                  <Link to="/craftsmen">ابحث عن صنايعي</Link>
+                </Button>
+                <Button 
+                  asChild
+                  variant="outline" 
+                  className="bg-accent hover:bg-accent-dark text-white hover:text-white text-lg"
+                  size="lg"
+                >
+                  <Link to="/jobs">استعرض المهام</Link>
+                </Button>
+              </div>
+            )}
             
             <div className="mt-8 flex flex-wrap justify-center lg:justify-start gap-4">
               <div className="flex items-center gap-2">

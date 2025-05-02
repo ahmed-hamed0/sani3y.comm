@@ -2,11 +2,12 @@
 CREATE OR REPLACE FUNCTION public.get_job_applications(p_job_id UUID)
 RETURNS TABLE(
   id UUID,
+  job_id UUID,
+  craftsman_id UUID,
   proposal TEXT,
   budget INTEGER,
   status TEXT,
   submitted_at TIMESTAMPTZ,
-  craftsman_id UUID,
   craftsman_name TEXT,
   craftsman_avatar TEXT,
   craftsman_specialty TEXT,
@@ -20,11 +21,12 @@ BEGIN
   RETURN QUERY
   SELECT 
     ja.id,
+    ja.job_id,
+    ja.craftsman_id,
     ja.proposal,
     ja.budget,
     ja.status,
     ja.submitted_at,
-    p.id AS craftsman_id,
     p.full_name AS craftsman_name,
     p.avatar_url AS craftsman_avatar,
     cd.specialty AS craftsman_specialty,
@@ -32,7 +34,7 @@ BEGIN
   FROM 
     job_applications ja
     JOIN profiles p ON ja.craftsman_id = p.id
-    LEFT JOIN craftsman_details cd ON p.id = cd.id
+    LEFT JOIN craftsman_details cd ON ja.craftsman_id = cd.id
   WHERE 
     ja.job_id = p_job_id
   ORDER BY 

@@ -42,6 +42,7 @@ const JobApplicationsList = ({ jobId, isMyJob }: JobApplicationsListProps) => {
       try {
         setLoading(true);
         
+        // Use the RPC function to fetch job applications
         const { data, error } = await supabase
           .rpc('get_job_applications', { p_job_id: jobId });
           
@@ -51,6 +52,7 @@ const JobApplicationsList = ({ jobId, isMyJob }: JobApplicationsListProps) => {
         }
         
         if (data) {
+          // Transform the received data into our Application interface
           const formattedApplications = data.map((app: any) => ({
             id: app.id,
             proposal: app.proposal,
@@ -114,6 +116,23 @@ const JobApplicationsList = ({ jobId, isMyJob }: JobApplicationsListProps) => {
             : { ...app, status: 'rejected' }
         )
       );
+
+      // Send notification to the accepted craftsman
+      const acceptedApp = applications.find(app => app.id === applicationId);
+      if (acceptedApp) {
+        const { error: notificationError } = await supabase
+          .from('notifications')
+          .insert({
+            user_id: acceptedApp.craftsman.id,
+            title: 'تم قبول عرضك',
+            message: 'تم قبول عرضك للمهمة، يمكنك التواصل مع العميل للبدء في العمل',
+            link: `/job/${jobId}`
+          });
+
+        if (notificationError) {
+          console.error('Error sending notification:', notificationError);
+        }
+      }
       
       toast.success('تم قبول العرض بنجاح');
     } catch (err) {
@@ -133,11 +152,18 @@ const JobApplicationsList = ({ jobId, isMyJob }: JobApplicationsListProps) => {
     try {
       setIsSending(true);
       
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !userData.user) {
+        toast.error('فشل في التحقق من المستخدم');
+        return;
+      }
+      
       const { error } = await supabase
         .from('messages')
         .insert({
           content: message.trim(),
-          sender_id: (await supabase.auth.getUser()).data.user?.id,
+          sender_id: userData.user.id,
           receiver_id: selectedApplication.craftsman.id,
           read: false
         });

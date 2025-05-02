@@ -37,15 +37,20 @@ const JobApplication = ({ jobId, isOpen, onClose, onSuccess }: JobApplicationPro
     try {
       setIsSubmitting(true);
 
-      // Check if user already applied to this job using raw SQL query
-      const { data: existingApplications, error: checkError } = await supabase
+      // Check if user already applied to this job using RPC function
+      const { data: checkResult, error: checkError } = await supabase
         .rpc('check_job_application', {
           p_job_id: jobId,
           p_craftsman_id: user.id
-        })
-        .single();
+        });
 
-      const existingApplication = existingApplications?.exists || false;
+      if (checkError) {
+        console.error('Error checking application:', checkError);
+        toast.error('حدث خطأ أثناء التحقق من التقديم');
+        return;
+      }
+
+      const existingApplication = checkResult?.exists || false;
 
       if (existingApplication) {
         toast.error('لقد قمت بالتقديم على هذه المهمة من قبل');
@@ -53,8 +58,20 @@ const JobApplication = ({ jobId, isOpen, onClose, onSuccess }: JobApplicationPro
         return;
       }
 
+      // Get job information to know the client
+      const { data: jobData } = await supabase
+        .from('jobs')
+        .select('client_id, title')
+        .eq('id', jobId)
+        .single();
+
+      if (!jobData) {
+        toast.error('لم يتم العثور على المهمة');
+        return;
+      }
+
       // Submit application
-      const { error } = await supabase
+      const { data: applicationData, error } = await supabase
         .from('job_applications')
         .insert({
           job_id: jobId,
@@ -63,12 +80,29 @@ const JobApplication = ({ jobId, isOpen, onClose, onSuccess }: JobApplicationPro
           budget: budget ? parseInt(budget) : null,
           status: 'pending',
           submitted_at: new Date().toISOString()
-        });
+        })
+        .select()
+        .single();
 
       if (error) {
         console.error('Error submitting application:', error);
         toast.error('حدث خطأ أثناء التقديم للمهمة');
         return;
+      }
+
+      // Send notification to the client
+      const { error: notificationError } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: jobData.client_id,
+          title: 'تقديم جديد على المهمة',
+          message: `قام صنايعي بتقديم عرض جديد على مهمة "${jobData.title}"`,
+          link: `/job/${jobId}`
+        });
+
+      if (notificationError) {
+        console.error('Error sending notification:', notificationError);
+        // Continue execution even if notification fails
       }
 
       toast.success('تم تقديم طلبك بنجاح');

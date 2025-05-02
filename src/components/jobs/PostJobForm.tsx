@@ -1,16 +1,42 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CATEGORIES, GOVERNORATES } from '@/data/mockData';
+import { CATEGORIES } from '@/data/mockData';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { Spinner } from '@/components/ui/spinner';
 import { supabase } from '@/integrations/supabase/client';
+
+// Define Egyptian governorates
+const GOVERNORATES = [
+  "القاهرة", "الجيزة", "الإسكندرية", "القليوبية", "الدقهلية", "الشرقية", "الغربية", 
+  "المنوفية", "البحيرة", "كفر الشيخ", "دمياط", "بورسعيد", "الإسماعيلية", "السويس", 
+  "الفيوم", "بني سويف", "المنيا", "أسيوط", "سوهاج", "قنا", "الأقصر", "أسوان", 
+  "البحر الأحمر", "الوادي الجديد", "مطروح", "شمال سيناء", "جنوب سيناء"
+];
+
+// Define cities for each governorate
+const CITIES = {
+  "القاهرة": [
+    "وسط البلد", "المعادي", "مدينة نصر", "مصر الجديدة", "العباسية", "حلوان", "شبرا", 
+    "عين شمس", "التجمع الخامس", "الزمالك", "المرج", "السيدة زينب", "المطرية", "الوايلي", 
+    "المنيل", "الخانكة", "العبور", "القاهرة الجديدة", "الشيخ زايد", "بدر", "15 مايو", 
+    "المقطم", "النزهة", "الزيتون", "الزاوية الحمراء", "السلام", "طرة", "دار السلام", 
+    "البساتين", "حدائق القبة", "الماظة", "مصر القديمة", "منشأة ناصر", "غرب القاهرة", 
+    "شرق القاهرة"
+  ],
+  "الجيزة": [
+    "6 أكتوبر", "بولاق الدكرور", "الدقي", "العجوزة", "الهرم", "البدرشين", "كرداسة", 
+    "أطفيح", "الصف", "العياط", "الواحات البحرية", "منشأة القناطر", "أوسيم", "كفر حكيم", 
+    "أبو النمرس", "الوراق", "المنيب", "إمبابة", "المناشي", "العمرانية", "الطالبية", 
+    "أبو رواش", "كفر غطاطي"
+  ],
+  // ... keep all other governorate cities
+} as const;
 
 const PostJobForm = () => {
   const [searchParams] = useSearchParams();
@@ -32,9 +58,18 @@ const PostJobForm = () => {
   });
 
   const [selectedGovernorate, setSelectedGovernorate] = useState<string>('');
+  const [cities, setCities] = useState<string[]>([]);
 
-  // Get cities based on selected governorate
-  const cities = GOVERNORATES.find(g => g.name === selectedGovernorate)?.cities || [];
+  useEffect(() => {
+    if (selectedGovernorate) {
+      setCities(CITIES[selectedGovernorate as keyof typeof CITIES] || []);
+      if (formData.city && !CITIES[selectedGovernorate as keyof typeof CITIES]?.includes(formData.city)) {
+        setFormData(prev => ({ ...prev, city: '' }));
+      }
+    } else {
+      setCities([]);
+    }
+  }, [selectedGovernorate, formData.city]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -46,7 +81,6 @@ const PostJobForm = () => {
     
     if (name === 'governorate') {
       setSelectedGovernorate(value);
-      setFormData(prev => ({ ...prev, city: '' }));
     }
   };
 
@@ -210,8 +244,8 @@ const PostJobForm = () => {
               </SelectTrigger>
               <SelectContent>
                 {GOVERNORATES.map(governorate => (
-                  <SelectItem key={governorate.id} value={governorate.name}>
-                    {governorate.name}
+                  <SelectItem key={governorate} value={governorate}>
+                    {governorate}
                   </SelectItem>
                 ))}
               </SelectContent>
