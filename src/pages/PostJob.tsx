@@ -1,7 +1,7 @@
 
 import MainLayout from '@/components/layouts/MainLayout';
 import PostJobForm from '@/components/jobs/PostJobForm';
-import { RequireClient } from '@/hooks/useAuth';
+import { RequireClient } from '@/hooks/auth';
 
 const PostJob = () => {
   return (
