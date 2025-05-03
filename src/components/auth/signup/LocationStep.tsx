@@ -1,169 +1,198 @@
 
-import { useState, useEffect } from "react";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { governorates, cities } from "@/data/egyptianCities";
-
-const locationSchema = z.object({
-  governorate: z.string().min(1, { message: "يجب اختيار المحافظة" }),
-  city: z.string().min(1, { message: "يجب اختيار المدينة" }),
-  address: z.string().optional(),
-  phone: z.string().min(11, { message: "يجب إدخال رقم هاتف صحيح" }).max(11),
-});
+import { UseFormReturn } from "react-hook-form";
+import { RegisterFormValues } from "@/lib/auth";
+import { Spinner } from "@/components/ui/spinner";
+import { egyptianGovernorates } from "@/data/egyptianGovernorates";
+import { egyptianCities } from "@/data/egyptianCities";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useState, useEffect } from "react";
 
 interface LocationStepProps {
+  form: UseFormReturn<RegisterFormValues>;
+  role: "client" | "craftsman";
+  isLoading: boolean;
   onPrevStep: () => void;
-  onNextStep: () => void;
-  formData: any;
-  updateFormData: (data: any) => void;
+  // Fix: Change onNextStep to accept a React.FormEvent parameter
+  onNextStep?: (e: React.FormEvent) => void;
 }
 
-export const LocationStep = ({
+const LocationStep = ({
+  form,
+  role,
+  isLoading,
   onPrevStep,
   onNextStep,
-  formData,
-  updateFormData,
 }: LocationStepProps) => {
   const [availableCities, setAvailableCities] = useState<string[]>([]);
-  
-  const form = useForm<z.infer<typeof locationSchema>>({
-    resolver: zodResolver(locationSchema),
-    defaultValues: {
-      governorate: formData.governorate || "",
-      city: formData.city || "",
-      address: formData.address || "",
-      phone: formData.phone || "",
-    },
-  });
-
-  const { watch } = form;
-  const selectedGovernorate = watch("governorate");
+  const selectedGovernorate = form.watch("governorate");
 
   useEffect(() => {
-    if (selectedGovernorate && cities[selectedGovernorate]) {
-      setAvailableCities([...cities[selectedGovernorate]]);
-    } else {
-      setAvailableCities([]);
-    }
-    
-    // Reset city when governorate changes
-    if (selectedGovernorate !== formData.governorate) {
-      form.setValue("city", "");
-    }
-  }, [selectedGovernorate, formData.governorate, form]);
+    if (selectedGovernorate) {
+      const cities = egyptianCities[selectedGovernorate] || [];
+      setAvailableCities(cities);
 
-  const onSubmit = (data: z.infer<typeof locationSchema>) => {
-    updateFormData(data);
-    onNextStep();
-  };
+      // إذا كانت المدينة المحددة حاليًا غير متاحة في المحافظة الجديدة، قم بمسحها
+      const currentCity = form.getValues("city");
+      if (currentCity && !cities.includes(currentCity)) {
+        form.setValue("city", "");
+      }
+    }
+  }, [selectedGovernorate, form]);
 
   return (
-    <div className="space-y-6 py-4">
-      <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold">تحديد الموقع</h2>
-        <p className="text-muted-foreground">يرجى إدخال بيانات الموقع الخاص بك</p>
+    <div className="space-y-6">
+      <h2 className="text-xl font-semibold text-center">
+        {role === "client" ? "معلومات العميل" : "معلومات الصنايعي"}
+      </h2>
+
+      <FormField
+        control={form.control}
+        name="governorate"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>المحافظة</FormLabel>
+            <Select
+              disabled={isLoading}
+              onValueChange={field.onChange}
+              defaultValue={field.value}
+            >
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر المحافظة" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {egyptianGovernorates.map((governorate) => (
+                  <SelectItem key={governorate} value={governorate}>
+                    {governorate}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="city"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>المدينة</FormLabel>
+            <Select
+              disabled={isLoading || !selectedGovernorate}
+              onValueChange={field.onChange}
+              defaultValue={field.value}
+            >
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue
+                    placeholder={
+                      !selectedGovernorate
+                        ? "اختر المحافظة أولاً"
+                        : "اختر المدينة"
+                    }
+                  />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {availableCities.map((city) => (
+                  <SelectItem key={city} value={city}>
+                    {city}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="agreeTerms"
+        render={({ field }) => (
+          <FormItem className="flex flex-row items-start space-x-3 space-x-reverse space-y-0 rounded-md border p-4">
+            <FormControl>
+              <Checkbox
+                disabled={isLoading}
+                checked={field.value}
+                onCheckedChange={field.onChange}
+              />
+            </FormControl>
+            <div className="space-y-1 leading-none">
+              <FormLabel>
+                أوافق على{" "}
+                <a
+                  href="/terms"
+                  className="text-primary hover:underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  الشروط والأحكام
+                </a>{" "}
+                و{" "}
+                <a
+                  href="/privacy"
+                  className="text-primary hover:underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  سياسة الخصوصية
+                </a>
+              </FormLabel>
+              <FormMessage />
+            </div>
+          </FormItem>
+        )}
+      />
+
+      <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-3">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onPrevStep}
+          disabled={isLoading}
+        >
+          رجوع
+        </Button>
+        {role === "craftsman" && onNextStep ? (
+          <Button
+            type="button"
+            onClick={onNextStep}
+            disabled={isLoading}
+          >
+            التالي
+          </Button>
+        ) : (
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Spinner size="sm" className="mr-2" /> جارٍ التسجيل...
+              </>
+            ) : (
+              "إنشاء الحساب"
+            )}
+          </Button>
+        )}
       </div>
-
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <FormField
-            control={form.control}
-            name="governorate"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>المحافظة</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="اختر المحافظة" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {governorates.map((gov) => (
-                      <SelectItem key={gov} value={gov}>
-                        {gov}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="city"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>المدينة</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                  disabled={!selectedGovernorate}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="اختر المدينة" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {availableCities.map((city) => (
-                      <SelectItem key={city} value={city}>
-                        {city}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="address"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>العنوان التفصيلي (اختياري)</FormLabel>
-                <FormControl>
-                  <Input placeholder="العنوان التفصيلي" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="phone"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>رقم الهاتف</FormLabel>
-                <FormControl>
-                  <Input placeholder="ادخل رقم الهاتف" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <div className="flex justify-between pt-4">
-            <Button type="button" variant="outline" onClick={onPrevStep}>
-              السابق
-            </Button>
-            <Button type="submit">التالي</Button>
-          </div>
-        </form>
-      </Form>
     </div>
   );
 };

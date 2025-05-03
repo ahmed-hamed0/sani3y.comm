@@ -67,7 +67,7 @@ const SignUpForm = ({ initialRole = 'client' }: SignUpFormProps) => {
     setStep(1);
   };
   
-  // Fixed: Changed function signature to match expected prop type
+  // Fix: Properly implement goToCraftsmanDetails as an event handler function
   const goToCraftsmanDetails = (e: React.FormEvent) => {
     e.preventDefault();
     const step2Fields = ['governorate', 'city', 'agreeTerms'];

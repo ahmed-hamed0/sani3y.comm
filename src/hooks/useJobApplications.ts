@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,10 +33,10 @@ export function useJobApplications(jobId: string, isMyJob: boolean, onRefreshNee
         });
       }
 
-      // Use string parameters directly
+      // Fix: Use assertStringParam for RPC parameter
       const { data: rpcData, error } = await supabase
         .rpc("get_job_applications", { 
-          job_id_param: jobId
+          job_id_param: assertStringParam(jobId)
         })
         .order("created_at", { ascending: false });
 
