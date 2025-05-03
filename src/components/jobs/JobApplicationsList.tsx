@@ -17,7 +17,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/auth";
 import { Check, X } from "lucide-react";
-import { assertRPCResponse } from "@/utils/supabaseTypes";
+import { assertRPCResponse, assertStringParam } from "@/utils/supabaseTypes";
 
 export interface JobApplicationsListProps {
   jobId: string;
@@ -72,7 +72,9 @@ export function JobApplicationsList({ jobId, isMyJob, onRefreshNeeded }: JobAppl
 
         // Use RPC with proper type assertion
         const { data: rpcData, error } = await supabase
-          .rpc("get_job_applications", { job_id_param: jobId })
+          .rpc("get_job_applications", { 
+            job_id_param: assertStringParam(jobId)
+          })
           .order("created_at", { ascending: false });
 
         if (error) throw error;

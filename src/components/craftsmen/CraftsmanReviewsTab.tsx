@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { assertRPCResponse } from '@/utils/supabaseTypes';
+import { assertRPCResponse, assertStringParam } from '@/utils/supabaseTypes';
 import { Spinner } from '@/components/ui/spinner';
 import { toast } from '@/components/ui/sonner';
 import { useAuth } from '@/hooks/auth';
@@ -150,7 +149,9 @@ const CraftsmanReviewsTab = ({ craftsmanId }: { craftsmanId: string }) => {
       
       // Use the RPC function to get reviews
       const { data, error } = await supabase
-        .rpc('get_craftsman_reviews', { craftsman_id: craftsmanId });
+        .rpc('get_craftsman_reviews', { 
+          craftsman_id: assertStringParam(craftsmanId) 
+        });
       
       if (error) throw error;
       
