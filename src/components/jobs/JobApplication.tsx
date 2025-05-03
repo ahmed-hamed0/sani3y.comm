@@ -24,6 +24,7 @@ import { useAuth } from "@/hooks/auth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Spinner } from "../ui/spinner";
+import { assertRPCResponse } from '@/utils/supabaseTypes';
 
 const applicantSchema = z.object({
   budget: z.number().min(1, { message: "يجب تحديد تكلفة مناسبة" }),
@@ -110,7 +111,7 @@ export function JobApplication({
 
     setIsSubmitting(true);
     try {
-      // Use type assertion to fix the TypeScript error
+      // Use the proper RPC call with type assertion
       const { data: checkData, error: checkError } = await supabase.rpc(
         'check_job_application',
         {
@@ -121,9 +122,10 @@ export function JobApplication({
 
       if (checkError) throw checkError;
 
-      // Use type assertion for the application check result
-      const typedCheckData = checkData as unknown as ApplicationCheckResult;
-      if (typedCheckData && typedCheckData.exists) {
+      // Use properly typed response with assertion
+      const response = assertRPCResponse<ApplicationCheckResult>(checkData);
+      
+      if (response.data && response.data.exists) {
         toast({
           title: "لا يمكن التقديم",
           description: "لقد قدمت عرضاً بالفعل على هذه المهمة",

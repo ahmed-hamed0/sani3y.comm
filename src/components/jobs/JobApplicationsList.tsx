@@ -15,8 +15,9 @@ import { ar } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { Spinner } from "@/components/ui/spinner";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/auth";
 import { Check, X } from "lucide-react";
+import { assertRPCResponse } from "@/utils/supabaseTypes";
 
 export interface JobApplicationsListProps {
   jobId: string;
@@ -69,13 +70,15 @@ export function JobApplicationsList({ jobId, isMyJob, onRefreshNeeded }: JobAppl
           });
         }
 
-        // Fix: Use any as intermediate type to solve TypeScript error
-        const { data, error } = await supabase
+        // Use RPC with proper type assertion
+        const { data: rpcData, error } = await supabase
           .rpc("get_job_applications", { job_id_param: jobId })
           .order("created_at", { ascending: false });
 
         if (error) throw error;
-        setApplications((data as JobApplication[]) || []);
+        
+        const response = assertRPCResponse<JobApplication[]>(rpcData);
+        setApplications(response.data || []);
       } catch (error) {
         console.error("Error fetching applications:", error);
         toast({

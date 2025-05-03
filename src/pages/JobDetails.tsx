@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/auth';
 import { Spinner } from '@/components/ui/spinner';
 import { useToast } from '@/hooks/use-toast';
 import { BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator, Breadcrumb, BreadcrumbList } from '@/components/ui/breadcrumb';
@@ -15,6 +15,7 @@ import { ar } from 'date-fns/locale';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { JobApplication } from '@/components/jobs/JobApplication';
 import { JobApplicationsList } from '@/components/jobs/JobApplicationsList';
+import { assertRPCResponse } from '@/utils/supabaseTypes';
 
 type JobStatus = 'open' | 'in_progress' | 'completed' | 'cancelled';
 
@@ -106,16 +107,18 @@ const JobDetails = () => {
           
           // Check if the user has already applied
           if (isCraftsman) {
-            // Fix: Use any as intermediate type to solve TypeScript error
-            const { data: checkData, error: appError } = await supabase
+            // Use proper RPC call with type assertion
+            const { data: rpcData, error: appError } = await supabase
               .rpc("check_job_application", { 
                 p_craftsman_id: user.id,
                 p_job_id: id
               });
             
             if (appError) throw appError;
-            // Use type assertion to correctly access the exists property
-            setHasApplied(checkData && (checkData as ApplicationCheckResult).exists);
+            
+            // Use proper type assertion
+            const response = assertRPCResponse<ApplicationCheckResult>(rpcData);
+            setHasApplied(response.data && response.data.exists);
           }
         }
       } catch (error) {
@@ -232,7 +235,7 @@ const JobDetails = () => {
   const isOpenJob = job.status === 'open';
   const isInProgressJob = job.status === 'in_progress';
   const isCompletedJob = job.status === 'completed';
-  const isClient = user && job.client_id === user.id; // This is fine since we removed the duplicate earlier
+  const isClient = user && job.client_id === user.id;
   const canApply = isCraftsman && isOpenJob && !hasApplied && !isMyJob;
 
   return (

@@ -67,11 +67,12 @@ const ReviewForm = ({ craftsmanId, onReviewSubmit }: { craftsmanId: string; onRe
     try {
       setIsSubmitting(true);
 
+      // Fix: Update the field names to match the expected schema
       const { data, error } = await supabase
         .from('reviews')
         .insert([
           {
-            craftsman_id: craftsmanId,
+            reviewed_id: craftsmanId,
             reviewer_id: user.id,
             rating,
             comment,

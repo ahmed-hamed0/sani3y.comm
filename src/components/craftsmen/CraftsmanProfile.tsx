@@ -6,7 +6,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { CraftsmanProfileHeader } from './CraftsmanProfileHeader';
 import { CraftsmanAboutTab } from './CraftsmanAboutTab';
 import { CraftsmanGalleryTab } from './CraftsmanGalleryTab';
-import { CraftsmanReviewsTab } from './CraftsmanReviewsTab';
+import CraftsmanReviewsTab from './CraftsmanReviewsTab';
 import { useCraftsmanProfile } from '@/hooks/useCraftsmanProfile';
 import { useEffect } from 'react';
 

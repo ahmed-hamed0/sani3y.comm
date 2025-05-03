@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Form } from '@/components/ui/form';
@@ -68,15 +67,14 @@ const SignUpForm = ({ initialRole = 'client' }: SignUpFormProps) => {
     setStep(1);
   };
   
-  // تصحيح نوع الوظيفة لتقبل معلمة الحدث
-  const goToCraftsmanDetails = (e: React.FormEvent) => {
+  // Fix the signature to match expected void function
+  const goToCraftsmanDetails = async (e: React.FormEvent) => {
     e.preventDefault();
     const step2Fields = ['governorate', 'city', 'agreeTerms'];
-    form.trigger(step2Fields as any).then((step2Result) => {
-      if (step2Result) {
-        setStep(3);
-      }
-    });
+    const step2Result = await form.trigger(step2Fields as any);
+    if (step2Result) {
+      setStep(3);
+    }
   };
 
   const onSubmit = async (values: RegisterFormValues) => {
@@ -144,8 +142,8 @@ const SignUpForm = ({ initialRole = 'client' }: SignUpFormProps) => {
             role={role}
             isLoading={isLoading}
             onPrevStep={handlePrevStep}
-            // تصحيح نوع الوظيفة - نحن نمرر دالة تقبل معلمة الحدث
-            onNextStep={role === 'craftsman' ? (e: React.FormEvent) => goToCraftsmanDetails(e) : undefined}
+            // Fix: Pass the function with event parameter
+            onNextStep={role === 'craftsman' ? goToCraftsmanDetails : undefined}
           />
         ) : (
           <CraftsmanDetailsStep
