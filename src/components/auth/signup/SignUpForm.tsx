@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Form } from '@/components/ui/form';
@@ -68,18 +67,15 @@ const SignUpForm = ({ initialRole = 'client' }: SignUpFormProps) => {
     setStep(1);
   };
   
-  // Fixed: Change function signature to match expected prop type
-  const goToCraftsmanDetails = () => {
-    // Return a function that accepts the event parameter
-    return (e: React.FormEvent) => {
-      e.preventDefault();
-      const step2Fields = ['governorate', 'city', 'agreeTerms'];
-      form.trigger(step2Fields as any).then(step2Result => {
-        if (step2Result) {
-          setStep(3);
-        }
-      });
-    };
+  // Fixed: Changed function signature to match expected prop type
+  const goToCraftsmanDetails = (e: React.FormEvent) => {
+    e.preventDefault();
+    const step2Fields = ['governorate', 'city', 'agreeTerms'];
+    form.trigger(step2Fields as any).then(step2Result => {
+      if (step2Result) {
+        setStep(3);
+      }
+    });
   };
 
   const onSubmit = async (values: RegisterFormValues) => {
@@ -147,7 +143,7 @@ const SignUpForm = ({ initialRole = 'client' }: SignUpFormProps) => {
             role={role}
             isLoading={isLoading}
             onPrevStep={handlePrevStep}
-            onNextStep={role === 'craftsman' ? goToCraftsmanDetails() : undefined}
+            onNextStep={role === 'craftsman' ? goToCraftsmanDetails : undefined}
           />
         ) : (
           <CraftsmanDetailsStep

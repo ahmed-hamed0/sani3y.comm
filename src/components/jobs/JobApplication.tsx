@@ -24,7 +24,7 @@ import { useAuth } from "@/hooks/auth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Spinner } from "../ui/spinner";
-import { assertRPCResponse, assertStringParam } from '@/utils/supabaseTypes';
+import { assertRPCResponse } from '@/utils/supabaseTypes';
 
 const applicantSchema = z.object({
   budget: z.number().min(1, { message: "يجب تحديد تكلفة مناسبة" }),
@@ -111,12 +111,12 @@ export function JobApplication({
 
     setIsSubmitting(true);
     try {
-      // Fixed: Use the string directly without assertion
+      // Use string parameters directly without assertion
       const { data: checkData, error: checkError } = await supabase.rpc(
         'check_job_application',
         {
-          p_craftsman_id: user.id as string,
-          p_job_id: jobId as string
+          p_craftsman_id: user.id,
+          p_job_id: jobId
         }
       );
 

@@ -107,11 +107,11 @@ const JobDetails = () => {
           
           // Check if the user has already applied
           if (isCraftsman) {
-            // Fixed: Use the string directly without assertion
+            // Use string parameters directly
             const { data: rpcData, error: appError } = await supabase
               .rpc("check_job_application", { 
-                p_craftsman_id: user.id as string,
-                p_job_id: id as string
+                p_craftsman_id: user.id,
+                p_job_id: id
               });
             
             if (appError) throw appError;

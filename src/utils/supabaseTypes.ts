@@ -1,4 +1,3 @@
-
 /**
  * Type guard to assert RPC response types for Supabase
  * This utility helps safely type the response from Supabase RPC calls
@@ -16,4 +15,7 @@ export function assertRPCResponse<T>(data: any): RPCResponse<T> {
   };
 }
 
-// We no longer need the assertStringParam function as we're using type assertion directly
+// We're keeping this function but implementing it properly
+export function assertStringParam(value: string): string {
+  return value;
+}

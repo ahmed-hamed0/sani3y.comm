@@ -34,10 +34,10 @@ export function useJobApplications(jobId: string, isMyJob: boolean, onRefreshNee
         });
       }
 
-      // Fixed: Use the string directly without assertion
+      // Use string parameters directly
       const { data: rpcData, error } = await supabase
         .rpc("get_job_applications", { 
-          job_id_param: jobId as string
+          job_id_param: jobId
         })
         .order("created_at", { ascending: false });
 
