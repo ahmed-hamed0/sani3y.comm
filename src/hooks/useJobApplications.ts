@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { assertRPCResponse, assertStringParam } from "@/utils/supabaseTypes";
+import { assertRPCResponse } from "@/utils/supabaseTypes";
 import { JobApplication } from "@/components/jobs/ApplicationCard";
 
 interface JobData {
@@ -34,10 +34,10 @@ export function useJobApplications(jobId: string, isMyJob: boolean, onRefreshNee
         });
       }
 
-      // Use RPC with proper type assertion
+      // Fixed: Use the string directly without assertion
       const { data: rpcData, error } = await supabase
         .rpc("get_job_applications", { 
-          job_id_param: assertStringParam(jobId)
+          job_id_param: jobId as string
         })
         .order("created_at", { ascending: false });
 

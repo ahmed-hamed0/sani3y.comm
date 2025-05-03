@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Form } from '@/components/ui/form';
@@ -67,15 +68,17 @@ const SignUpForm = ({ initialRole = 'client' }: SignUpFormProps) => {
     setStep(1);
   };
   
-  // Modified: Create a wrapper function that doesn't take event parameters
+  // Fixed: Change function signature to match expected prop type
   const goToCraftsmanDetails = () => {
-    return async (e: React.FormEvent) => {
+    // Return a function that accepts the event parameter
+    return (e: React.FormEvent) => {
       e.preventDefault();
       const step2Fields = ['governorate', 'city', 'agreeTerms'];
-      const step2Result = await form.trigger(step2Fields as any);
-      if (step2Result) {
-        setStep(3);
-      }
+      form.trigger(step2Fields as any).then(step2Result => {
+        if (step2Result) {
+          setStep(3);
+        }
+      });
     };
   };
 
@@ -144,7 +147,6 @@ const SignUpForm = ({ initialRole = 'client' }: SignUpFormProps) => {
             role={role}
             isLoading={isLoading}
             onPrevStep={handlePrevStep}
-            // Fix: Pass the wrapped function that returns a function with the event parameter
             onNextStep={role === 'craftsman' ? goToCraftsmanDetails() : undefined}
           />
         ) : (

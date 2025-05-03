@@ -147,10 +147,10 @@ const CraftsmanReviewsTab = ({ craftsmanId }: { craftsmanId: string }) => {
     try {
       setLoading(true);
       
-      // Use the RPC function to get reviews
+      // Use the RPC function to get reviews - Fixed: Use type assertion for string parameter
       const { data, error } = await supabase
         .rpc('get_craftsman_reviews', { 
-          craftsman_id: assertStringParam(craftsmanId) 
+          craftsman_id: craftsmanId as string
         });
       
       if (error) throw error;

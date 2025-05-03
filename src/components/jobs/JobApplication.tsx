@@ -111,12 +111,12 @@ export function JobApplication({
 
     setIsSubmitting(true);
     try {
-      // Use the proper RPC call with type assertion
+      // Fixed: Use the string directly without assertion
       const { data: checkData, error: checkError } = await supabase.rpc(
         'check_job_application',
         {
-          p_craftsman_id: assertStringParam(user.id),
-          p_job_id: assertStringParam(jobId)
+          p_craftsman_id: user.id as string,
+          p_job_id: jobId as string
         }
       );
 

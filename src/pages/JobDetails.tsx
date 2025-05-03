@@ -107,11 +107,11 @@ const JobDetails = () => {
           
           // Check if the user has already applied
           if (isCraftsman) {
-            // Use proper RPC call with type assertion
+            // Fixed: Use the string directly without assertion
             const { data: rpcData, error: appError } = await supabase
               .rpc("check_job_application", { 
-                p_craftsman_id: assertStringParam(user.id),
-                p_job_id: assertStringParam(id)
+                p_craftsman_id: user.id as string,
+                p_job_id: id as string
               });
             
             if (appError) throw appError;
@@ -220,7 +220,7 @@ const JobDetails = () => {
           <div className="text-center py-12">
             <h1 className="text-2xl font-bold mb-4">المهمة غير موجودة</h1>
             <p className="mb-6 text-muted-foreground">
-              لا يمكن العثور على المهمة المطلوبة. قد تكون تم حذفها أو ربما أدخلت رابطاً خاطئاً.
+              لا يمكن العثور على المهمة المطلوبة. قد تكون تم حذفها أو ربما أدخلت رابطاً خا��ئاً.
             </p>
             <Button asChild>
               <Link to="/jobs">العودة إلى قائمة المهام</Link>

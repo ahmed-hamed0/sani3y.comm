@@ -16,7 +16,4 @@ export function assertRPCResponse<T>(data: any): RPCResponse<T> {
   };
 }
 
-// Type assertion utility for raw string-based parameters to avoid 'never' type errors
-export function assertStringParam(param: string): string {
-  return param;
-}
+// We no longer need the assertStringParam function as we're using type assertion directly
