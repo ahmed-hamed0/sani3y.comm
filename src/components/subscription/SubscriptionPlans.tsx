@@ -6,6 +6,7 @@ import { Check } from 'lucide-react';
 import { useAuth } from '@/hooks/auth';
 import { useToast } from '@/hooks/use-toast';
 import { SubscriptionPlan } from './types';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 
 const plans: SubscriptionPlan[] = [
@@ -60,6 +61,8 @@ export function SubscriptionPlans() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   
   const handleSubscribe = async (planId: string) => {
     if (!user) {
@@ -71,23 +74,35 @@ export function SubscriptionPlans() {
       return;
     }
     
-    setLoadingPlanId(planId);
+    const plan = plans.find(p => p.id === planId);
+    if (!plan) return;
+    
+    setSelectedPlan(plan);
+    setShowPaymentDialog(true);
+  };
+  
+  const handleConfirmPayment = async () => {
+    if (!selectedPlan || !user) return;
+    
+    setLoadingPlanId(selectedPlan.id);
     
     try {
-      // هنا سيتم إضافة المنطق الخاص بالاشتراك والدفع
-      // يمكن استخدام خدمات مثل Stripe لمعالجة الدفع
+      // هنا في التطبيق الفعلي سيتم إضافة المنطق الخاص بالتحقق من الدفع
+      // يمكن تسجيل طلب الاشتراك في قاعدة البيانات مع حالة "في انتظار التأكيد"
       
       toast({
         title: "تم إرسال طلب الاشتراك",
-        description: "سيتم تفعيل اشتراكك بعد اكتمال عملية الدفع",
+        description: "سيتم تفعيل اشتراكك بعد التحقق من عملية الدفع",
       });
       
-      // محاكاة لعملية الاشتراك - في التطبيق الفعلي يجب استخدام بوابة دفع
+      // محاكاة لعملية التسجيل
       await new Promise(resolve => setTimeout(resolve, 1500));
       
+      setShowPaymentDialog(false);
+      
       toast({
-        title: "تم تفعيل الاشتراك بنجاح",
-        description: "يمكنك الآن الاستفادة من جميع مميزات الاشتراك",
+        title: "تم استلام طلب الاشتراك بنجاح",
+        description: "سيتم مراجعة الطلب وتفعيل الاشتراك في أقرب وقت",
       });
     } catch (error) {
       console.error("Error subscribing:", error);
@@ -153,6 +168,45 @@ export function SubscriptionPlans() {
           </Card>
         ))}
       </div>
+      
+      {/* Payment Instructions Dialog */}
+      <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>تفاصيل الدفع</DialogTitle>
+            <DialogDescription>
+              الدفع متاح فقط عن طريق فودافون كاش
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="bg-muted p-4 rounded-lg">
+              <h4 className="font-medium mb-2">تعليمات الدفع:</h4>
+              <ol className="list-decimal list-inside space-y-2">
+                <li>قم بتحويل قيمة الاشتراك ({selectedPlan?.price} ج.م) إلى رقم فودافون كاش: <span className="font-bold">01063252412</span></li>
+                <li>تأكد من إضافة اسم المستخدم الخاص بك في تفاصيل التحويل</li>
+                <li>بعد إتمام التحويل، انقر على زر تأكيد الدفع أدناه</li>
+                <li>سيتم التحقق من التحويل وتفعيل اشتراكك في غضون 24 ساعة</li>
+              </ol>
+            </div>
+            
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <p className="text-yellow-800 text-sm">
+                ملاحظة: لن يتم تفعيل الاشتراك إلا بعد التحقق من عملية الدفع. لأي استفسارات يرجى التواصل معنا على البريد الإلكتروني support@crafty.com
+              </p>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPaymentDialog(false)}>
+              إلغاء
+            </Button>
+            <Button onClick={handleConfirmPayment} disabled={loadingPlanId !== null}>
+              {loadingPlanId ? 'جاري المعالجة...' : 'تأكيد الدفع'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       
       <div className="mt-12 text-center">
         <h3 className="text-xl font-semibold mb-4">لماذا الاشتراك المدفوع؟</h3>

@@ -14,7 +14,7 @@ export const useReviews = (craftsmanId: string) => {
     try {
       const { data, error } = await supabase.rpc(
         'get_craftsman_reviews', 
-        { p_craftsman_id: assertStringParam(craftsmanId) }
+        { p_craftsman_id: craftsmanId }
       );
       
       if (error) {

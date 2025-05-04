@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/auth';
-import { assertRPCResponse, assertStringParam } from '@/utils/supabaseTypes';
+import { assertRPCResponse } from '@/utils/supabaseTypes';
 
 type JobStatus = 'open' | 'in_progress' | 'completed' | 'cancelled';
 
@@ -64,8 +64,8 @@ export const useJobDetails = (jobId?: string) => {
           if (isCraftsman) {
             const { data: rpcData, error: appError } = await supabase
               .rpc("check_job_application", { 
-                p_craftsman_id: assertStringParam(user.id),
-                p_job_id: assertStringParam(jobId)
+                p_craftsman_id: user.id,
+                p_job_id: jobId
               });
             
             if (appError) throw appError;

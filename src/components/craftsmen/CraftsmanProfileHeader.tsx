@@ -96,7 +96,7 @@ export const CraftsmanProfileHeader = ({ craftsman }: CraftsmanProfileHeaderProp
           </Button>
           <Button 
             variant="outline" 
-            className="flex items-center justify-center gap-2"
+            className="flex items-center justify-center gap-2 hover:bg-gray-100"
             onClick={handleCall}
           >
             <Phone className="h-4 w-4" />
@@ -104,7 +104,7 @@ export const CraftsmanProfileHeader = ({ craftsman }: CraftsmanProfileHeaderProp
           </Button>
           <Button 
             variant="outline" 
-            className="flex items-center justify-center gap-2"
+            className="flex items-center justify-center gap-2 hover:bg-gray-100"
             onClick={() => setShowMessages(!showMessages)}
           >
             <MessageSquare className="h-4 w-4" />
@@ -112,7 +112,7 @@ export const CraftsmanProfileHeader = ({ craftsman }: CraftsmanProfileHeaderProp
           </Button>
           <Button 
             variant="outline" 
-            className="flex items-center justify-center gap-2 bg-green-500 text-white hover:bg-green-600"
+            className="flex items-center justify-center gap-2 bg-white text-green-500 border-green-500 hover:bg-green-50"
             onClick={handleWhatsApp}
           >
             <BsWhatsapp className="h-4 w-4" />

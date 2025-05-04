@@ -1,5 +1,5 @@
 
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Spinner } from '@/components/ui/spinner';
@@ -13,11 +13,19 @@ import { useEffect } from 'react';
 const CraftsmanProfile = () => {
   const { id } = useParams<{ id: string }>();
   const { craftsman, loading, error } = useCraftsmanProfile(id);
+  const navigate = useNavigate();
 
   // Scroll to top on mount
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  // Handle request service button
+  const handleRequestService = () => {
+    if (craftsman?.id) {
+      navigate(`/post-job?craftsman=${craftsman.id}`);
+    }
+  };
   
   if (loading) {
     return (

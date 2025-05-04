@@ -4,7 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/auth";
 import { ApplicationFormValues } from "@/components/jobs/application/ApplicationForm";
-import { assertRPCResponse, assertStringParam } from '@/utils/supabaseTypes';
+import { assertRPCResponse } from '@/utils/supabaseTypes';
 
 interface JobData {
   id: string;
@@ -61,12 +61,12 @@ export const useJobApplication = (jobId: string, onSuccess: () => void, onClose:
 
     setIsSubmitting(true);
     try {
-      // Use assertStringParam for the RPC parameters
+      // Use params directly without assertStringParam
       const { data: rpcData, error: checkError } = await supabase.rpc(
         'check_job_application',
         {
-          p_craftsman_id: assertStringParam(user.id),
-          p_job_id: assertStringParam(jobId)
+          p_craftsman_id: user.id,
+          p_job_id: jobId
         }
       );
 
