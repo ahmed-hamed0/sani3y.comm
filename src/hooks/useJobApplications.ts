@@ -34,7 +34,6 @@ export function useJobApplications(jobId: string, isMyJob: boolean, onRefreshNee
         });
       }
 
-      // Use assertStringParam for RPC parameter
       const { data: rpcData, error } = await supabase
         .rpc("get_job_applications", { 
           job_id_param: assertStringParam(jobId)
