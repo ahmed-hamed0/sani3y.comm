@@ -1,8 +1,8 @@
 
-import { Button } from "@/components/ui/button";
-import {
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { z } from 'zod';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
@@ -10,96 +10,109 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+} from '@/components/ui/form';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { InfoIcon } from 'lucide-react';
 
-const applicantSchema = z.object({
-  budget: z.number().min(1, { message: "يجب تحديد تكلفة مناسبة" }),
-  proposal: z.string().min(10, {
-    message: "يجب أن يكون العرض 10 أحرف على الأقل",
+const formSchema = z.object({
+  proposal: z.string().min(30, {
+    message: 'يجب أن يحتوي العرض على 30 حرفًا على الأقل',
+  }),
+  budget: z.coerce.number().int().positive({
+    message: 'يجب أن تكون القيمة رقمًا موجبًا',
   }),
 });
 
-export type ApplicationFormValues = z.infer<typeof applicantSchema>;
+export type ApplicationFormValues = z.infer<typeof formSchema>;
 
 interface ApplicationFormProps {
-  onSubmit: (values: ApplicationFormValues) => Promise<void>;
+  onSubmit: (values: ApplicationFormValues) => void;
   onClose: () => void;
   isSubmitting: boolean;
+  remainingFreeApplications?: number;
 }
 
-export const ApplicationForm = ({ onSubmit, onClose, isSubmitting }: ApplicationFormProps) => {
+export const ApplicationForm = ({
+  onSubmit,
+  onClose,
+  isSubmitting,
+  remainingFreeApplications
+}: ApplicationFormProps) => {
   const form = useForm<ApplicationFormValues>({
-    resolver: zodResolver(applicantSchema),
+    resolver: zodResolver(formSchema),
     defaultValues: {
+      proposal: '',
       budget: 0,
-      proposal: "",
     },
   });
 
-  const handleSubmit = async (values: ApplicationFormValues) => {
-    await onSubmit(values);
-    form.reset();
+  const handleSubmit = (values: ApplicationFormValues) => {
+    onSubmit(values);
   };
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="budget"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>التكلفة المقترحة (جنيه مصري)</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  min="1"
-                  placeholder="أدخل القيمة المناسبة"
-                  {...field}
-                  onChange={(e) => field.onChange(+e.target.value)}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
+        {remainingFreeApplications !== undefined && (
+          <Alert className="bg-muted">
+            <InfoIcon className="h-4 w-4 ml-2" />
+            <AlertDescription>
+              متبقي لديك <span className="font-bold">{remainingFreeApplications}</span> {remainingFreeApplications === 1 ? 'طلب مجاني' : 'طلبات مجانية'}
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <FormField
           control={form.control}
           name="proposal"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>تفاصيل العرض</FormLabel>
+              <FormLabel>العرض المقدم</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="اكتب تفاصيل عرضك وخبرتك في مثل هذا النوع من المهام..."
-                  className="min-h-[120px]"
+                  placeholder="اكتب تفاصيل عرضك هنا..."
                   {...field}
+                  rows={5}
+                  disabled={isSubmitting}
                 />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-
-        <DialogFooter>
+        <FormField
+          control={form.control}
+          name="budget"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>السعر المقترح (جنيه مصري)</FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  min={0}
+                  {...field}
+                  disabled={isSubmitting}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <div className="flex justify-end space-x-2 space-x-reverse">
           <Button
             type="button"
             variant="outline"
             onClick={onClose}
-            className="w-full sm:w-auto"
+            disabled={isSubmitting}
           >
             إلغاء
           </Button>
-          <Button type="submit" className="w-full sm:w-auto" disabled={isSubmitting}>
-            إرسال العرض
+          <Button type="submit" disabled={isSubmitting}>
+            تقديم العرض
           </Button>
-        </DialogFooter>
+        </div>
       </form>
     </Form>
   );

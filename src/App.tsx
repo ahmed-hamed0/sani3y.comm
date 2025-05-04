@@ -17,6 +17,7 @@ import About from "./pages/About";
 import Profile from "./pages/Profile";
 import ResetPassword from "./pages/ResetPassword";
 import JobDetails from "./pages/JobDetails";
+import Subscription from "./pages/Subscription";
 
 // Import supabase client
 import { supabase } from "./integrations/supabase/client";
@@ -55,6 +56,7 @@ const App = () => (
                 <Profile />
               </RequireAuth>
             } />
+            <Route path="/subscription" element={<Subscription />} />
             <Route path="/sign-in" element={<SignIn />} />
             <Route path="/sign-up" element={<SignUp />} />
             <Route path="/reset-password" element={<ResetPassword />} />

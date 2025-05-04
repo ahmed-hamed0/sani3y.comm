@@ -1,7 +1,7 @@
 
 import { useAuth } from '@/hooks/auth';
 import { useReviews } from '@/hooks/useReviews';
-import { Review } from '@/components/reviews/Review';
+import { Review } from '@/components/reviews/types';
 import { ReviewForm } from '@/components/reviews/ReviewForm';
 import { ReviewsSummary } from '@/components/reviews/ReviewsSummary';
 import { ReviewsList } from '@/components/reviews/ReviewsList';

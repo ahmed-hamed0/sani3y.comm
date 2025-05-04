@@ -141,7 +141,6 @@ const JobDetails = () => {
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
         onSuccess={() => {
-          setHasApplied(true);
           refreshJobDetails();
         }}
       />

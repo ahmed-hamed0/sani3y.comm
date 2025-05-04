@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { assertRPCResponse, assertStringParam } from '@/utils/supabaseTypes';
-import { Review } from '@/components/reviews/types';
+import { Review, ReviewsSummary } from '@/components/reviews/types';
 
 export const useReviews = (craftsmanId: string) => {
   const [reviews, setReviews] = useState<Review[]>([]);

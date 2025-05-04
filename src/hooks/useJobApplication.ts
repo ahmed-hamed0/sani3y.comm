@@ -62,7 +62,7 @@ export const useJobApplication = (jobId: string, onSuccess: () => void, onClose:
     setIsSubmitting(true);
     try {
       // Use assertStringParam for the RPC parameters
-      const { data: checkData, error: checkError } = await supabase.rpc(
+      const { data: rpcData, error: checkError } = await supabase.rpc(
         'check_job_application',
         {
           p_craftsman_id: assertStringParam(user.id),
@@ -73,7 +73,7 @@ export const useJobApplication = (jobId: string, onSuccess: () => void, onClose:
       if (checkError) throw checkError;
 
       // Use properly typed response with assertion
-      const response = assertRPCResponse<ApplicationCheckResult>(checkData);
+      const response = assertRPCResponse<ApplicationCheckResult>(rpcData);
       
       if (response.data && response.data.exists) {
         toast({

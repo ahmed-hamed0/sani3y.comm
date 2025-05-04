@@ -1,4 +1,3 @@
-
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { Menu, User, Plus, Bell, X, LogOut } from 'lucide-react';
@@ -11,11 +10,19 @@ interface MainLayoutProps {
   children: React.ReactNode;
 }
 
-const MainLayout = ({ children }: MainLayoutProps) => {
+const MainLayout = ({ children }: { children: React.ReactNode }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const navItems = [
+    { label: "الرئيسية", path: "/" },
+    { label: "الصنايعية", path: "/craftsmen" },
+    { label: "المهام", path: "/jobs" },
+    { label: "الاشتراكات", path: "/subscription" },
+    { label: "من نحن", path: "/about" },
+  ];
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
@@ -61,10 +68,9 @@ const MainLayout = ({ children }: MainLayoutProps) => {
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center space-x-6 space-x-reverse">
-              <Link to="/" className="text-gray-700 hover:text-primary transition">الرئيسية</Link>
-              <Link to="/craftsmen" className="text-gray-700 hover:text-primary transition">الصنايعية</Link>
-              <Link to="/jobs" className="text-gray-700 hover:text-primary transition">المهام</Link>
-              <Link to="/about" className="text-gray-700 hover:text-primary transition">عن المنصة</Link>
+              {navItems.map((item) => (
+                <Link key={item.path} to={item.path} className="text-gray-700 hover:text-primary transition">{item.label}</Link>
+              ))}
             </nav>
 
             {/* User Actions */}
@@ -127,10 +133,9 @@ const MainLayout = ({ children }: MainLayoutProps) => {
           {mobileMenuOpen && (
             <div className="md:hidden bg-white pt-4 pb-6 border-t mt-4">
               <nav className="flex flex-col space-y-4">
-                <Link to="/" className="text-gray-700 hover:text-primary transition text-right px-4">الرئيسية</Link>
-                <Link to="/craftsmen" className="text-gray-700 hover:text-primary transition text-right px-4">الصنايعية</Link>
-                <Link to="/jobs" className="text-gray-700 hover:text-primary transition text-right px-4">المهام</Link>
-                <Link to="/about" className="text-gray-700 hover:text-primary transition text-right px-4">عن المنصة</Link>
+                {navItems.map((item) => (
+                  <Link key={item.path} to={item.path} className="text-gray-700 hover:text-primary transition text-right px-4">{item.label}</Link>
+                ))}
                 
                 <div className="border-t pt-4 mt-2 px-4">
                   {user ? (
