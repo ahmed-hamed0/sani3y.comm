@@ -67,7 +67,7 @@ const SignUpForm = ({ initialRole = 'client' }: SignUpFormProps) => {
     setStep(1);
   };
   
-  // Fix: Properly implement goToCraftsmanDetails as an event handler function
+  // Fix: Change the signature to match what LocationStep expects
   const goToCraftsmanDetails = (e: React.FormEvent) => {
     e.preventDefault();
     const step2Fields = ['governorate', 'city', 'agreeTerms'];

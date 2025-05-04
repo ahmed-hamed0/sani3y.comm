@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useToast } from '@/hooks/use-toast';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -143,30 +144,30 @@ const CraftsmanReviewsTab = ({ craftsmanId }: { craftsmanId: string }) => {
   const [reviewsCount, setReviewsCount] = useState(0);
   const { user } = useAuth();
 
-  const loadReviews = async () => {
+  const fetchReviews = async () => {
+    if (!craftsmanId) return;
+    
+    setLoading(true);
     try {
-      setLoading(true);
-      
-      // Fix: Type the craftsman_id parameter properly
-      const { data, error } = await supabase
+      const { data: rawData, error } = await supabase
         .rpc('get_craftsman_reviews', { 
-          craftsman_id: assertStringParam(craftsmanId)
-        });
-      
-      if (error) throw error;
-      
-      // Apply type assertion to handle the response
-      const response = assertRPCResponse<any[]>(data);
-      
-      if (response.data) {
-        setReviews(response.data);
-        
-        // Calculate average rating
-        if (response.data.length > 0) {
-          const totalRating = response.data.reduce((sum, review) => sum + review.rating, 0);
-          setAverageRating(totalRating / response.data.length);
-          setReviewsCount(response.data.length);
-        }
+          craftsman_id_param: assertStringParam(craftsmanId) 
+        })
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      // Use the assertRPCResponse helper to properly type the response
+      const response = assertRPCResponse<Review[]>(rawData);
+      setReviews(response.data || []);
+
+      // Calculate average rating
+      if (response.data.length > 0) {
+        const totalRating = response.data.reduce((sum, review) => sum + review.rating, 0);
+        setAverageRating(totalRating / response.data.length);
+        setReviewsCount(response.data.length);
       }
     } catch (error) {
       console.error('Error loading reviews:', error);
@@ -176,7 +177,7 @@ const CraftsmanReviewsTab = ({ craftsmanId }: { craftsmanId: string }) => {
   };
 
   useEffect(() => {
-    loadReviews();
+    fetchReviews();
   }, [craftsmanId]);
 
   return (
@@ -202,7 +203,7 @@ const CraftsmanReviewsTab = ({ craftsmanId }: { craftsmanId: string }) => {
         </div>
       </div>
 
-      {user && <ReviewForm craftsmanId={craftsmanId} onReviewSubmit={loadReviews} />}
+      {user && <ReviewForm craftsmanId={craftsmanId} onReviewSubmit={fetchReviews} />}
 
       {loading ? (
         <div className="flex justify-center py-8">

@@ -1,7 +1,8 @@
+
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { assertRPCResponse } from "@/utils/supabaseTypes";
+import { assertRPCResponse, assertStringParam } from "@/utils/supabaseTypes";
 import { JobApplication } from "@/components/jobs/ApplicationCard";
 
 interface JobData {
@@ -33,7 +34,7 @@ export function useJobApplications(jobId: string, isMyJob: boolean, onRefreshNee
         });
       }
 
-      // Fix: Use assertStringParam for RPC parameter
+      // Use assertStringParam for RPC parameter
       const { data: rpcData, error } = await supabase
         .rpc("get_job_applications", { 
           job_id_param: assertStringParam(jobId)

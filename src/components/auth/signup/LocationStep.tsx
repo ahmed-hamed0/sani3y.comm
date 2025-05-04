@@ -12,7 +12,7 @@ import { UseFormReturn } from "react-hook-form";
 import { RegisterFormValues } from "@/lib/auth";
 import { Spinner } from "@/components/ui/spinner";
 import { egyptianGovernorates } from "@/data/egyptianGovernorates";
-import { egyptianCities } from "@/data/egyptianCities";
+import { cities as egyptianCities } from "@/data/egyptianCities";
 import {
   Select,
   SelectContent,

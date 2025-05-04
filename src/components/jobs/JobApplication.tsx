@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -111,7 +112,7 @@ export function JobApplication({
 
     setIsSubmitting(true);
     try {
-      // Fix: Use assertStringParam for the RPC parameters
+      // Use assertStringParam for the RPC parameters
       const { data: checkData, error: checkError } = await supabase.rpc(
         'check_job_application',
         {

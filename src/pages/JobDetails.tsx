@@ -15,7 +15,7 @@ import { ar } from 'date-fns/locale';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { JobApplication } from '@/components/jobs/JobApplication';
 import { JobApplicationsList } from '@/components/jobs/JobApplicationsList';
-import { assertRPCResponse } from '@/utils/supabaseTypes';
+import { assertRPCResponse, assertStringParam } from '@/utils/supabaseTypes';
 
 type JobStatus = 'open' | 'in_progress' | 'completed' | 'cancelled';
 
@@ -107,7 +107,7 @@ const JobDetails = () => {
           
           // Check if the user has already applied
           if (isCraftsman) {
-            // Fix: Use assertStringParam for the RPC parameters
+            // Use assertStringParam for the RPC parameters
             const { data: rpcData, error: appError } = await supabase
               .rpc("check_job_application", { 
                 p_craftsman_id: assertStringParam(user.id),
@@ -220,7 +220,7 @@ const JobDetails = () => {
           <div className="text-center py-12">
             <h1 className="text-2xl font-bold mb-4">المهمة غير موجودة</h1>
             <p className="mb-6 text-muted-foreground">
-              لا يمكن العثور على المهمة المطلوبة. قد تكون تم حذفها أو ربما أدخلت رابطاً خا��ئاً.
+              لا يمكن العثور على المهمة المطلوبة. قد تكون تم حذفها أو ربما أدخلت رابط��ً خا��ئاً.
             </p>
             <Button asChild>
               <Link to="/jobs">العودة إلى قائمة المهام</Link>
