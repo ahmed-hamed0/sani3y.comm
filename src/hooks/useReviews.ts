@@ -1,49 +1,56 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { Review } from '@/components/reviews/types';
 import { assertRPCResponse, assertStringParam } from '@/utils/supabaseTypes';
-import { Review, ReviewsSummary } from '@/components/reviews/types';
 
 export const useReviews = (craftsmanId: string) => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
-  const [averageRating, setAverageRating] = useState<number | null>(null);
+  const [averageRating, setAverageRating] = useState(0);
   const [reviewsCount, setReviewsCount] = useState(0);
-
+  
   const fetchReviews = async () => {
-    if (!craftsmanId) return;
-    
-    setLoading(true);
     try {
-      const { data: rawData, error } = await supabase
-        .rpc('get_craftsman_reviews', { 
-          craftsman_id_param: assertStringParam(craftsmanId)
-        })
-        .order('created_at', { ascending: false });
-
+      const { data, error } = await supabase.rpc(
+        'get_craftsman_reviews', 
+        { p_craftsman_id: assertStringParam(craftsmanId) }
+      );
+      
       if (error) {
         throw error;
       }
-
-      const response = assertRPCResponse<Review[]>(rawData);
-      setReviews(response.data || []);
-
-      // Calculate average rating
-      if (response.data.length > 0) {
-        const totalRating = response.data.reduce((sum, review) => sum + review.rating, 0);
-        setAverageRating(totalRating / response.data.length);
-        setReviewsCount(response.data.length);
+      
+      const typedData = assertRPCResponse<Review[]>(data);
+      
+      setReviews(typedData.data || []);
+      setReviewsCount(typedData.data.length);
+      
+      if (typedData.data.length > 0) {
+        const sum = typedData.data.reduce((acc, review) => acc + review.rating, 0);
+        setAverageRating(sum / typedData.data.length);
       }
     } catch (error) {
-      console.error('Error loading reviews:', error);
+      console.error('Error fetching reviews:', error);
     } finally {
       setLoading(false);
     }
   };
-
+  
   useEffect(() => {
     fetchReviews();
   }, [craftsmanId]);
+  
+  const refreshReviews = () => {
+    setLoading(true);
+    fetchReviews();
+  };
 
-  return { reviews, loading, averageRating, reviewsCount, refreshReviews: fetchReviews };
+  return {
+    reviews,
+    loading,
+    averageRating,
+    reviewsCount,
+    refreshReviews
+  };
 };

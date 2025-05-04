@@ -266,6 +266,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_applications_count: {
+        Row: {
+          created_at: string
+          free_applications_used: number
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          free_applications_used?: number
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          free_applications_used?: number
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           created_at: string
