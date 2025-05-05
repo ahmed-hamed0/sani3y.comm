@@ -61,8 +61,8 @@ export const useJobApplication = (jobId: string, onSuccess: () => void, onClose:
 
     setIsSubmitting(true);
     try {
-      // Fixed the TypeScript error - defining proper parameters
-      const params = { 
+      // Fixed the TypeScript error by properly defining the parameters
+      const params: { p_craftsman_id: string; p_job_id: string } = {
         p_craftsman_id: user.id, 
         p_job_id: jobId 
       };

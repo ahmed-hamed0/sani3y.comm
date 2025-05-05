@@ -1,0 +1,19 @@
+
+.whatsapp-btn {
+  background-color: white;
+  color: #25D366;
+  border: 1px solid #25D366;
+  transition: all 0.3s ease;
+}
+
+.whatsapp-btn:hover {
+  background-color: #25D366;
+  color: white;
+}
+
+.profile-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}

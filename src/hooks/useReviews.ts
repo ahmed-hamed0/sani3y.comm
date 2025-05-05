@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Review } from '@/components/reviews/types';
-import { assertRPCResponse, assertStringParam } from '@/utils/supabaseTypes';
+import { assertRPCResponse } from '@/utils/supabaseTypes';
 
 export const useReviews = (craftsmanId: string) => {
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -12,9 +12,12 @@ export const useReviews = (craftsmanId: string) => {
   
   const fetchReviews = async () => {
     try {
+      // Define the parameters properly to fix TypeScript error
+      const params = { p_craftsman_id: craftsmanId };
+      
       const { data, error } = await supabase.rpc(
         'get_craftsman_reviews', 
-        { p_craftsman_id: craftsmanId }
+        params
       );
       
       if (error) {

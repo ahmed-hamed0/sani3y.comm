@@ -1,5 +1,7 @@
 
-export interface Craftsman {
+import { Craftsman as BaseCraftsman } from './index';
+
+export interface Craftsman extends Omit<BaseCraftsman, 'role'> {
   id: string;
   name: string;
   specialty: string;
@@ -19,5 +21,5 @@ export interface Craftsman {
   createdAt: Date;
   phone: string;
   email?: string;
-  role?: string;
+  role: 'craftsman'; // Make sure this is specifically "craftsman" to match the base type
 }

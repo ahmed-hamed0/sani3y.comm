@@ -62,8 +62,8 @@ export const useJobDetails = (jobId?: string) => {
           
           // Check if the user has already applied
           if (isCraftsman) {
-            // Fixed the TypeScript error - defining proper parameters
-            const params = { 
+            // Fixed the TypeScript error by properly defining the parameters
+            const params: { p_craftsman_id: string; p_job_id: string } = { 
               p_craftsman_id: user.id, 
               p_job_id: jobId 
             };

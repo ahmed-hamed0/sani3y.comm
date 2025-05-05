@@ -1,106 +1,108 @@
-
-import { Card, CardContent } from '@/components/ui/card';
+import { useState, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { egyptianGovernorates } from '@/data/egyptianGovernorates';
 import { CraftsmenSearchForm } from './CraftsmenSearchForm';
 
-interface FiltersProps {
+interface CraftsmenFiltersProps {
   onFilterChange: (filters: any) => void;
-  filters: {
-    specialty: string;
-    governorate: string;
-    rating: number;
-    onlineOnly: boolean;
-  };
+  filters: any;
   specialties: string[];
   onSearch: (term: string) => void;
 }
 
-export const CraftsmenFilters = ({ onFilterChange, filters, specialties, onSearch }: FiltersProps) => {
-  const handleFilterChange = (key: string, value: string | number | boolean) => {
-    onFilterChange({
-      ...filters,
-      [key]: value
-    });
+export const CraftsmenFilters = ({ onFilterChange, filters, specialties, onSearch }: CraftsmenFiltersProps) => {
+  const [governorates, setGovernorates] = useState<string[]>([]);
+  
+  useEffect(() => {
+    const governorateNames = egyptianGovernorates.map((gov) => gov.name);
+    setGovernorates(governorateNames);
+  }, []);
+  
+  const handleSpecialtyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    onFilterChange({ ...filters, specialty: e.target.value });
   };
-
+  
+  const handleGovernorateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    onFilterChange({ ...filters, governorate: e.target.value });
+  };
+  
+  const handleRatingChange = (value: number[]) => {
+    onFilterChange({ ...filters, rating: value[0] });
+  };
+  
+  const handleOnlineOnlyChange = (checked: boolean) => {
+    onFilterChange({ ...filters, onlineOnly: checked });
+  };
+  
   return (
-    <Card className="mb-6">
-      <CardContent className="pt-6">
-        <div className="mb-5">
-          <h3 className="font-semibold mb-2">البحث</h3>
-          <CraftsmenSearchForm onSearch={onSearch} />
-        </div>
-        
-        <Separator className="my-4" />
-        
-        <div className="mb-5">
-          <h3 className="font-semibold mb-2">التخصص</h3>
-          <Select
+    <div className="bg-white rounded-lg shadow-md p-4">
+      <CraftsmenSearchForm onSearch={onSearch} />
+      
+      <Separator className="my-4" />
+      
+      <div className="space-y-4">
+        {/* Specialty Filter */}
+        <div>
+          <Label htmlFor="specialty">التخصص</Label>
+          <select
+            id="specialty"
+            className="w-full mt-1 p-2 border rounded"
             value={filters.specialty}
-            onValueChange={(value) => handleFilterChange('specialty', value)}
+            onChange={handleSpecialtyChange}
           >
-            <SelectTrigger>
-              <SelectValue placeholder="جميع التخصصات" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">جميع التخصصات</SelectItem>
-              {specialties.map((specialty) => (
-                <SelectItem key={specialty} value={specialty}>
-                  {specialty}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <option value="all">الكل</option>
+            {specialties.map((specialty) => (
+              <option key={specialty} value={specialty}>
+                {specialty}
+              </option>
+            ))}
+          </select>
         </div>
-
-        <div className="mb-5">
-          <h3 className="font-semibold mb-2">المحافظة</h3>
-          <Select
+        
+        {/* Governorate Filter */}
+        <div>
+          <Label htmlFor="governorate">المحافظة</Label>
+          <select
+            id="governorate"
+            className="w-full mt-1 p-2 border rounded"
             value={filters.governorate}
-            onValueChange={(value) => handleFilterChange('governorate', value)}
+            onChange={handleGovernorateChange}
           >
-            <SelectTrigger>
-              <SelectValue placeholder="كل المحافظات" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">كل المحافظات</SelectItem>
-              {egyptianGovernorates.map((governorate) => (
-                <SelectItem key={governorate} value={governorate}>
-                  {governorate}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <option value="all">الكل</option>
+            {governorates.map((governorate) => (
+              <option key={governorate} value={governorate}>
+                {governorate}
+              </option>
+            ))}
+          </select>
         </div>
-
-        <div className="mb-5">
-          <h3 className="font-semibold mb-2">التقييم ({filters.rating} وما فوق)</h3>
+        
+        {/* Rating Filter */}
+        <div>
+          <Label>التقييم</Label>
           <Slider
             defaultValue={[filters.rating]}
-            min={0}
             max={5}
-            step={0.5}
-            className="py-4"
-            onValueChange={(value) => handleFilterChange('rating', value[0])}
+            step={1}
+            onValueChange={handleRatingChange}
           />
         </div>
-
+        
+        {/* Online Only Filter */}
         <div className="flex items-center justify-between">
-          <Label htmlFor="online-only" className="font-semibold">
-            المتاحون الآن فقط
-          </Label>
+          <Label htmlFor="onlineOnly">متاحين الآن فقط</Label>
           <Switch
-            id="online-only"
+            id="onlineOnly"
             checked={filters.onlineOnly}
-            onCheckedChange={(checked) => handleFilterChange('onlineOnly', checked)}
+            onCheckedChange={handleOnlineOnlyChange}
           />
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };

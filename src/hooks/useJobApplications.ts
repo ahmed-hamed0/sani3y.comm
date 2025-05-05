@@ -34,8 +34,10 @@ export function useJobApplications(jobId: string, isMyJob: boolean, onRefreshNee
         });
       }
 
-      // Fixed the TypeScript error - defining proper parameters
-      const params = { job_id_param: jobId };
+      // Fixed the TypeScript error by properly defining the parameters
+      const params: { job_id_param: string } = { 
+        job_id_param: jobId 
+      };
       
       const { data: rpcData, error } = await supabase
         .rpc("get_job_applications", params)
