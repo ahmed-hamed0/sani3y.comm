@@ -61,13 +61,15 @@ export const useJobApplication = (jobId: string, onSuccess: () => void, onClose:
 
     setIsSubmitting(true);
     try {
-      // Use params directly without assertStringParam
+      // Fixed the TypeScript error - defining proper parameters
+      const params = { 
+        p_craftsman_id: user.id, 
+        p_job_id: jobId 
+      };
+      
       const { data: rpcData, error: checkError } = await supabase.rpc(
         'check_job_application',
-        {
-          p_craftsman_id: user.id,
-          p_job_id: jobId
-        }
+        params
       );
 
       if (checkError) throw checkError;

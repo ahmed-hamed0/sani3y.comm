@@ -62,11 +62,14 @@ export const useJobDetails = (jobId?: string) => {
           
           // Check if the user has already applied
           if (isCraftsman) {
+            // Fixed the TypeScript error - defining proper parameters
+            const params = { 
+              p_craftsman_id: user.id, 
+              p_job_id: jobId 
+            };
+            
             const { data: rpcData, error: appError } = await supabase
-              .rpc("check_job_application", { 
-                p_craftsman_id: user.id,
-                p_job_id: jobId
-              });
+              .rpc("check_job_application", params);
             
             if (appError) throw appError;
             

@@ -21,6 +21,7 @@ export const useReviews = (craftsmanId: string) => {
         throw error;
       }
       
+      // Properly assert the response type
       const typedData = assertRPCResponse<Review[]>(data);
       
       setReviews(typedData.data || []);

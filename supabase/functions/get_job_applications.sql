@@ -1,43 +1,57 @@
 
-CREATE OR REPLACE FUNCTION public.get_job_applications(p_job_id UUID)
-RETURNS TABLE(
-  id UUID,
-  job_id UUID,
-  craftsman_id UUID,
-  proposal TEXT,
-  budget INTEGER,
-  status TEXT,
-  submitted_at TIMESTAMPTZ,
-  craftsman_name TEXT,
-  craftsman_avatar TEXT,
-  craftsman_specialty TEXT,
-  craftsman_rating NUMERIC
-) 
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
+-- Get job applications with security enhancement
+CREATE OR REPLACE FUNCTION public.get_job_applications(job_id_param uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+AS $function$
+DECLARE
+  job_client_id uuid;
+  result jsonb;
 BEGIN
-  RETURN QUERY
-  SELECT 
-    ja.id,
-    ja.job_id,
-    ja.craftsman_id,
-    ja.proposal,
-    ja.budget,
-    ja.status,
-    ja.submitted_at,
-    p.full_name AS craftsman_name,
-    p.avatar_url AS craftsman_avatar,
-    cd.specialty AS craftsman_specialty,
-    p.rating AS craftsman_rating
-  FROM 
-    job_applications ja
-    JOIN profiles p ON ja.craftsman_id = p.id
-    LEFT JOIN craftsman_details cd ON ja.craftsman_id = cd.id
-  WHERE 
-    ja.job_id = p_job_id
-  ORDER BY 
-    ja.submitted_at DESC;
+  -- Get client ID for requested job
+  SELECT client_id INTO job_client_id
+  FROM public.jobs
+  WHERE id = job_id_param;
+  
+  -- Security check - ensure user is authorized to see these applications
+  -- Only the job owner or admin can view applications
+  IF auth.uid() IS NULL OR (auth.uid() <> job_client_id AND NOT EXISTS (
+    SELECT 1 FROM auth.users WHERE id = auth.uid() AND raw_user_meta_data->>'role' = 'admin'
+  )) THEN
+    RETURN jsonb_build_object('error', 'Unauthorized access', 'status', 403);
+  END IF;
+  
+  -- Get applications
+  SELECT jsonb_build_object(
+    'status', 200,
+    'data', COALESCE(
+      (SELECT jsonb_agg(
+        jsonb_build_object(
+          'id', app.id,
+          'craftsman_id', app.craftsman_id,
+          'job_id', app.job_id,
+          'proposal', app.proposal,
+          'budget', app.budget,
+          'status', app.status,
+          'created_at', app.created_at,
+          'craftsman', jsonb_build_object(
+            'id', prof.id,
+            'name', prof.full_name,
+            'avatar', prof.avatar_url,
+            'rating', prof.rating,
+            'phone', prof.phone
+          )
+        )
+      )
+      FROM public.job_applications app
+      JOIN public.profiles prof ON app.craftsman_id = prof.id
+      WHERE app.job_id = job_id_param
+      ORDER BY app.created_at DESC), 
+      '[]'::jsonb
+    )
+  ) INTO result;
+  
+  RETURN result;
 END;
-$$;
+$function$;

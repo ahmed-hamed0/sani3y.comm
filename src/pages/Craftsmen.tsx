@@ -1,10 +1,10 @@
 
 import { useState, useEffect } from 'react';
 import MainLayout from '@/components/layouts/MainLayout';
-import { CraftsmanCard } from '@/components/craftsmen/CraftsmanCard';
+import CraftsmanCard from '@/components/craftsmen/CraftsmanCard';
 import { CraftsmenFilters } from '@/components/craftsmen/CraftsmenFilters';
 import { Spinner } from '@/components/ui/spinner';
-import { mockCraftsmen } from '@/data/mockData';
+import { CRAFTSMEN } from '@/data/mockData';
 
 const specialties = [
   'سباك',
@@ -28,7 +28,7 @@ const Craftsmen = () => {
     onlineOnly: false,
   });
   const [searchTerm, setSearchTerm] = useState('');
-  const [craftsmen, setCraftsmen] = useState(mockCraftsmen);
+  const [craftsmen, setCraftsmen] = useState(CRAFTSMEN);
   
   // Simulate loading
   useEffect(() => {
@@ -41,7 +41,7 @@ const Craftsmen = () => {
   
   // Filter craftsmen
   useEffect(() => {
-    const filtered = mockCraftsmen.filter((craftsman) => {
+    const filtered = CRAFTSMEN.filter((craftsman) => {
       // Filter by specialty
       if (filters.specialty !== 'all' && craftsman.specialty !== filters.specialty) {
         return false;

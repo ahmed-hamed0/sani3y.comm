@@ -1,5 +1,5 @@
 
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layouts/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -81,7 +81,7 @@ const JobDetails = () => {
       </MainLayout>
     );
   }
-
+  
   const isMyJob = user && job.client_id === user.id;
   const isOpenJob = job.status === 'open';
   const isInProgressJob = job.status === 'in_progress';

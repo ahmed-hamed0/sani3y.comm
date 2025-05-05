@@ -34,10 +34,11 @@ export function useJobApplications(jobId: string, isMyJob: boolean, onRefreshNee
         });
       }
 
+      // Fixed the TypeScript error - defining proper parameters
+      const params = { job_id_param: jobId };
+      
       const { data: rpcData, error } = await supabase
-        .rpc("get_job_applications", { 
-          job_id_param: jobId
-        })
+        .rpc("get_job_applications", params)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
