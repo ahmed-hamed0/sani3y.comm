@@ -1,6 +1,7 @@
 
-import { Craftsman as BaseCraftsman } from './index';
+import { User } from './index';
 
+// Define Craftsman interface to be compatible with the base Craftsman type
 export interface Craftsman {
   id: string;
   name: string;
@@ -20,6 +21,6 @@ export interface Craftsman {
   availability: boolean;
   createdAt: Date;
   phone: string;
-  email?: string;
+  email?: string; // Make email optional to match usage in the app
   role: 'craftsman'; // Make sure this is specifically "craftsman" to match the base type
 }

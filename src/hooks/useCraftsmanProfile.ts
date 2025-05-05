@@ -81,7 +81,8 @@ export const useCraftsmanProfile = (id: string | undefined) => {
           availability: details?.is_available || false,
           createdAt: new Date(profile.created_at),
           phone: profile.phone || '',
-          role: 'craftsman' // Add the missing role property
+          email: undefined, // Add the optional email property
+          role: 'craftsman' // Add the role property
         };
         
         setCraftsman(craftsmanData);

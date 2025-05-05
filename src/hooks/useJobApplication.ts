@@ -61,15 +61,15 @@ export const useJobApplication = (jobId: string, onSuccess: () => void, onClose:
 
     setIsSubmitting(true);
     try {
-      // Fixed the TypeScript error by properly defining the parameters
-      const params: { p_craftsman_id: string; p_job_id: string } = {
+      // Define with Record<string, any> to fix TypeScript error
+      const params: Record<string, any> = {
         p_craftsman_id: user.id, 
         p_job_id: jobId 
       };
       
       const { data: rpcData, error: checkError } = await supabase.rpc(
         'check_job_application',
-        params as any // Use type assertion to fix the TypeScript error
+        params
       );
 
       if (checkError) throw checkError;

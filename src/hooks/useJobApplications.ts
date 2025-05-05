@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,13 +34,13 @@ export function useJobApplications(jobId: string, isMyJob: boolean, onRefreshNee
         });
       }
 
-      // Fixed the TypeScript error by properly defining the parameters
-      const params: { job_id_param: string } = { 
+      // Define with Record<string, any> to fix TypeScript error
+      const params: Record<string, any> = { 
         job_id_param: jobId 
       };
       
       const { data: rpcData, error } = await supabase
-        .rpc("get_job_applications", params as any) // Use type assertion to fix the TypeScript error
+        .rpc("get_job_applications", params)
         .order("created_at", { ascending: false });
 
       if (error) throw error;

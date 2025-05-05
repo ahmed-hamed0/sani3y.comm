@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -61,14 +62,14 @@ export const useJobDetails = (jobId?: string) => {
           
           // Check if the user has already applied
           if (isCraftsman) {
-            // Fixed the TypeScript error by properly defining the parameters
-            const params: { p_craftsman_id: string; p_job_id: string } = { 
+            // Define with Record<string, any> to fix TypeScript error
+            const params: Record<string, any> = { 
               p_craftsman_id: user.id, 
               p_job_id: jobId 
             };
             
             const { data: rpcData, error: appError } = await supabase
-              .rpc("check_job_application", params as any); // Use type assertion to fix the TypeScript error
+              .rpc("check_job_application", params);
             
             if (appError) throw appError;
             
