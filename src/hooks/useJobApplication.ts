@@ -69,7 +69,7 @@ export const useJobApplication = (jobId: string, onSuccess: () => void, onClose:
       
       const { data: rpcData, error: checkError } = await supabase.rpc(
         'check_job_application',
-        params
+        params as any // Use type assertion to fix the TypeScript error
       );
 
       if (checkError) throw checkError;

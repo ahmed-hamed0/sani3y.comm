@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -69,7 +68,7 @@ export const useJobDetails = (jobId?: string) => {
             };
             
             const { data: rpcData, error: appError } = await supabase
-              .rpc("check_job_application", params);
+              .rpc("check_job_application", params as any); // Use type assertion to fix the TypeScript error
             
             if (appError) throw appError;
             

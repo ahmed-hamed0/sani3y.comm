@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -19,8 +20,7 @@ export const CraftsmenFilters = ({ onFilterChange, filters, specialties, onSearc
   const [governorates, setGovernorates] = useState<string[]>([]);
   
   useEffect(() => {
-    const governorateNames = egyptianGovernorates.map((gov) => gov.name);
-    setGovernorates(governorateNames);
+    setGovernorates(egyptianGovernorates);
   }, []);
   
   const handleSpecialtyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {

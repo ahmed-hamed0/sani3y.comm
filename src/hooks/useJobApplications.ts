@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,7 +39,7 @@ export function useJobApplications(jobId: string, isMyJob: boolean, onRefreshNee
       };
       
       const { data: rpcData, error } = await supabase
-        .rpc("get_job_applications", params)
+        .rpc("get_job_applications", params as any) // Use type assertion to fix the TypeScript error
         .order("created_at", { ascending: false });
 
       if (error) throw error;

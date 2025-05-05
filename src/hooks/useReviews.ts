@@ -17,7 +17,7 @@ export const useReviews = (craftsmanId: string) => {
       
       const { data, error } = await supabase.rpc(
         'get_craftsman_reviews', 
-        params
+        params as any // Use type assertion to fix the TypeScript error
       );
       
       if (error) {

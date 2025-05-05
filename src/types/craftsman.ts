@@ -1,7 +1,7 @@
 
 import { Craftsman as BaseCraftsman } from './index';
 
-export interface Craftsman extends Omit<BaseCraftsman, 'role'> {
+export interface Craftsman {
   id: string;
   name: string;
   specialty: string;

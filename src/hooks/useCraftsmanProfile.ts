@@ -80,7 +80,8 @@ export const useCraftsmanProfile = (id: string | undefined) => {
           isOnline: details?.is_available || false,
           availability: details?.is_available || false,
           createdAt: new Date(profile.created_at),
-          phone: profile.phone || ''
+          phone: profile.phone || '',
+          role: 'craftsman' // Add the missing role property
         };
         
         setCraftsman(craftsmanData);
