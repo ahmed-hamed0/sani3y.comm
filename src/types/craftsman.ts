@@ -1,7 +1,7 @@
 
 import { User } from './index';
 
-// Define Craftsman interface to be compatible with the base Craftsman type
+// Define Craftsman interface to match the one in index.ts
 export interface Craftsman {
   id: string;
   name: string;
@@ -21,6 +21,6 @@ export interface Craftsman {
   availability: boolean;
   createdAt: Date;
   phone: string;
-  email?: string; // Make email optional to match usage in the app
-  role: 'craftsman'; // Make sure this is specifically "craftsman" to match the base type
+  email?: string; // Make email optional to match the base User interface
+  role: 'craftsman'; // Make sure this is specifically "craftsman"
 }

@@ -4,7 +4,7 @@ export type UserRole = 'client' | 'craftsman';
 export interface User {
   id: string;
   name: string;
-  email: string;
+  email?: string; // Make email optional in the base User interface
   phone: string;
   role: UserRole;
   avatar?: string;
