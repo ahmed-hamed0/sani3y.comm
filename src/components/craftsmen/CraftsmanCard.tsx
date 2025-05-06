@@ -1,14 +1,26 @@
 
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Star, Check, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Craftsman } from '@/types';
+import { useReviews } from '@/hooks/useReviews';
 
 interface CraftsmanCardProps {
   craftsman: Craftsman;
 }
 
 const CraftsmanCard = ({ craftsman }: CraftsmanCardProps) => {
+  const { reviews, averageRating, reviewsCount } = useReviews(craftsman.id);
+  const [displayRating, setDisplayRating] = useState(craftsman.rating);
+  
+  useEffect(() => {
+    // Use the average rating from reviews if available, otherwise use craftsman.rating
+    if (reviewsCount > 0) {
+      setDisplayRating(averageRating);
+    }
+  }, [averageRating, reviewsCount, craftsman.rating]);
+  
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden card-hover">
       <div className="p-6">
@@ -34,9 +46,11 @@ const CraftsmanCard = ({ craftsman }: CraftsmanCardProps) => {
         <div className="flex justify-between items-center mb-3">
           <div className="flex items-center">
             <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
-            <span className="text-lg font-semibold mx-1">{craftsman.rating}</span>
+            <span className="text-lg font-semibold mx-1">{displayRating.toFixed(1)}</span>
           </div>
-          <span className="text-gray-500 text-sm">({craftsman.completedJobs} مهمة)</span>
+          <span className="text-gray-500 text-sm">
+            ({reviewsCount > 0 ? reviewsCount : craftsman.completedJobs} {reviewsCount > 0 ? 'تقييم' : 'مهمة'})
+          </span>
         </div>
         
         <div className="flex items-center text-gray-600 mb-4 text-sm">

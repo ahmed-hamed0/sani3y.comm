@@ -8,6 +8,7 @@ interface ReviewProps {
     comment?: string;
     created_at?: string;
     reviewer_name?: string;
+    reviewer_avatar?: string;
   };
 }
 
@@ -16,10 +17,18 @@ export const Review = ({ review }: ReviewProps) => {
     <Card className="p-4 mb-4">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center">
-          <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600">
-            {review.reviewer_name ? review.reviewer_name.charAt(0).toUpperCase() : 'U'}
-          </div>
-          <div className="ml-2">
+          {review.reviewer_avatar ? (
+            <img 
+              src={review.reviewer_avatar} 
+              alt={review.reviewer_name} 
+              className="h-8 w-8 rounded-full object-cover"
+            />
+          ) : (
+            <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600">
+              {review.reviewer_name ? review.reviewer_name.charAt(0).toUpperCase() : 'م'}
+            </div>
+          )}
+          <div className="mr-2">
             <p className="font-semibold">{review.reviewer_name || 'مستخدم مجهول'}</p>
             <p className="text-sm text-gray-500">
               {review.created_at ? new Date(review.created_at).toLocaleDateString('ar-EG') : ''}

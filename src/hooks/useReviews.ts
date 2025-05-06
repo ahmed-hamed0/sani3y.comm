@@ -15,22 +15,40 @@ export const useReviews = (craftsmanId: string) => {
       // Define the parameters properly for TypeScript
       const params = { p_craftsman_id: craftsmanId };
       
-      const { data, error } = await supabase.rpc<CraftsmanReview[]>(
-        'get_craftsman_reviews', 
-        params
-      );
+      const { data, error } = await supabase
+        .from('reviews')
+        .select(`
+          id,
+          rating,
+          comment,
+          created_at,
+          reviewer_id,
+          profiles!reviews_reviewer_id_fkey(full_name, avatar_url)
+        `)
+        .eq('reviewed_id', craftsmanId);
       
       if (error) {
         throw error;
       }
       
       if (data) {
-        setReviews(data);
-        setReviewsCount(data.length);
+        // Transform the data to match our Review interface
+        const transformedReviews: Review[] = data.map(review => ({
+          id: review.id,
+          rating: review.rating,
+          comment: review.comment || '',
+          created_at: review.created_at,
+          reviewer_id: review.reviewer_id,
+          reviewer_name: review.profiles?.full_name || 'مستخدم مجهول',
+          reviewer_avatar: review.profiles?.avatar_url || undefined
+        }));
         
-        if (data.length > 0) {
-          const sum = data.reduce((acc, review) => acc + review.rating, 0);
-          setAverageRating(sum / data.length);
+        setReviews(transformedReviews);
+        setReviewsCount(transformedReviews.length);
+        
+        if (transformedReviews.length > 0) {
+          const sum = transformedReviews.reduce((acc, review) => acc + review.rating, 0);
+          setAverageRating(sum / transformedReviews.length);
         }
       }
     } catch (error) {
@@ -41,7 +59,9 @@ export const useReviews = (craftsmanId: string) => {
   };
   
   useEffect(() => {
-    fetchReviews();
+    if (craftsmanId) {
+      fetchReviews();
+    }
   }, [craftsmanId]);
   
   const refreshReviews = () => {
