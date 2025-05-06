@@ -12,8 +12,8 @@ export const useReviews = (craftsmanId: string) => {
   
   const fetchReviews = async () => {
     try {
-      // Define the parameters properly to fix TypeScript error
-      const params: Record<string, any> = { p_craftsman_id: craftsmanId };
+      // Define the parameters properly for TypeScript
+      const params = { p_craftsman_id: craftsmanId };
       
       const { data, error } = await supabase.rpc(
         'get_craftsman_reviews', 

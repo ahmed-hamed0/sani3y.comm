@@ -1,145 +1,129 @@
 
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/auth';
-import { assertRPCResponse } from '@/utils/supabaseTypes';
 
-type JobStatus = 'open' | 'in_progress' | 'completed' | 'cancelled';
-
-interface JobDetails {
-  id: string;
-  title: string;
-  description: string;
-  status: JobStatus;
-  client_id: string;
-  craftsman_id?: string;
-  budget?: number;
-  governorate: string;
-  city?: string;
-  created_at: string;
-  client: any;
-  assigned_craftsman?: any;
-}
-
-interface ApplicationCheckResult {
-  exists: boolean;
-}
-
-export const useJobDetails = (jobId?: string) => {
-  const { user, isCraftsman, loading: authLoading } = useAuth();
+export const useJobDetails = (jobId: string | undefined) => {
+  const [job, setJob] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [hasApplied, setHasApplied] = useState(false);
+  const [isAssignedCraftsman, setIsAssignedCraftsman] = useState(false);
+  const { user } = useAuth();
   const { toast } = useToast();
   
-  const [job, setJob] = useState<JobDetails | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isAssignedCraftsman, setIsAssignedCraftsman] = useState(false);
-  const [hasApplied, setHasApplied] = useState(false);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
-
-  useEffect(() => {
-    const fetchJobDetails = async () => {
-      if (!jobId) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from('jobs')
-          .select(`
-            *,
-            client:profiles!jobs_client_id_fkey(*), 
-            assigned_craftsman:profiles!jobs_craftsman_id_fkey(*)
-          `)
-          .eq('id', jobId)
-          .single();
-        
-        if (error) throw error;
-        setJob(data as JobDetails);
-        
-        if (user && data) {
-          // Check if the current user is the assigned craftsman
-          if (data.craftsman_id === user.id) {
-            setIsAssignedCraftsman(true);
-          }
-          
-          // Check if the user has already applied
-          if (isCraftsman) {
-            // Define with Record<string, any> to fix TypeScript error
-            const params: Record<string, any> = { 
-              p_craftsman_id: user.id, 
-              p_job_id: jobId 
-            };
-            
-            const { data: rpcData, error: appError } = await supabase
-              .rpc("check_job_application", params);
-            
-            if (appError) throw appError;
-            
-            const response = assertRPCResponse<ApplicationCheckResult>(rpcData);
-            setHasApplied(response.data && response.data.exists);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching job:', error);
-        toast({
-          title: 'خطأ',
-          description: 'تعذر تحميل تفاصيل المهمة',
-          variant: 'destructive'
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (!authLoading) {
-      fetchJobDetails();
-    }
-  }, [jobId, user, authLoading, isCraftsman, refreshTrigger, toast]);
-
-  const refreshJobDetails = () => {
-    setRefreshTrigger(prev => prev + 1);
-  };
-
-  const handleMarkComplete = async () => {
-    if (!job || !user || !isAssignedCraftsman) return;
+  const fetchJobDetails = async () => {
+    if (!jobId) return;
     
     try {
-      const { error } = await supabase
+      setLoading(true);
+      
+      // Fetch job details
+      const { data: jobData, error: jobError } = await supabase
         .from('jobs')
-        .update({ status: 'completed' })
-        .eq('id', job.id);
+        .select(`
+          *,
+          client:client_id (
+            id,
+            full_name,
+            avatar_url,
+            rating,
+            governorate,
+            city
+          ),
+          assigned_craftsman:craftsman_id (
+            id,
+            full_name,
+            avatar_url,
+            rating,
+            governorate,
+            city,
+            craftsman_details (
+              specialty,
+              completed_jobs
+            )
+          )
+        `)
+        .eq('id', jobId)
+        .single();
+      
+      if (jobError) {
+        throw jobError;
+      }
+      
+      setJob(jobData);
+      
+      // Check if the current user is the assigned craftsman
+      if (user && jobData.craftsman_id === user.id) {
+        setIsAssignedCraftsman(true);
+      }
+      
+      // Check if craftsman has already applied
+      if (user && user.id) {
+        const { data: applicationData, error: applicationError } = await supabase
+          .from('job_applications')
+          .select('id')
+          .eq('job_id', jobId)
+          .eq('craftsman_id', user.id)
+          .single();
+          
+        if (!applicationError && applicationData) {
+          setHasApplied(true);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching job details:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Fetch job details when job ID changes
+  useEffect(() => {
+    fetchJobDetails();
+  }, [jobId, user]);
+  
+  // Mark job as complete
+  const handleMarkComplete = async () => {
+    if (!job || !user) return;
+    
+    try {
+      // Use properly typed parameters
+      const params = { p_job_id: jobId };
+      
+      const { error } = await supabase.rpc(
+        'mark_job_complete',
+        params
+      );
       
       if (error) throw error;
       
-      // Send notification to client
-      await supabase
-        .from('notifications')
-        .insert({
-          user_id: job.client_id,
-          title: 'تم اكتمال المهمة',
-          message: `تم الانتهاء من المهمة "${job.title}" ويمكنك الآن مراجعتها وتقييم الصنايعي`,
-          link: `/job/${job.id}`
-        });
+      // Refresh job details
+      fetchJobDetails();
       
       toast({
-        title: 'تم تحديث الحالة',
-        description: 'تم تحديد المهمة كمكتملة بنجاح'
+        title: "تم إتمام المهمة",
+        description: "تم تحديث حالة المهمة بنجاح"
       });
-      
-      refreshJobDetails();
     } catch (error) {
-      console.error('Error updating job:', error);
+      console.error('Error marking job as complete:', error);
       toast({
-        title: 'خطأ',
-        description: 'تعذر تحديث حالة المهمة',
-        variant: 'destructive'
+        title: "خطأ",
+        description: "حدث خطأ أثناء تحديث حالة المهمة",
+        variant: "destructive"
       });
     }
+  };
+  
+  const refreshJobDetails = () => {
+    fetchJobDetails();
   };
 
   return {
     job,
     loading,
-    isAssignedCraftsman,
     hasApplied,
+    isAssignedCraftsman,
     refreshJobDetails,
     handleMarkComplete
   };

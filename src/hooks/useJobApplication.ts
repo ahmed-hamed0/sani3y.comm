@@ -1,136 +1,150 @@
 
-import { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/auth";
-import { ApplicationFormValues } from "@/components/jobs/application/ApplicationForm";
-import { assertRPCResponse } from '@/utils/supabaseTypes';
+import { useState } from 'react';
+import { useAuth } from '@/hooks/auth';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
-interface JobData {
-  id: string;
-  title: string;
-  client_id?: string;
+export interface JobApplicationParams {
+  proposal: string;
+  budget?: number;
 }
 
-interface ApplicationCheckResult {
-  exists: boolean;
-}
-
-export const useJobApplication = (jobId: string, onSuccess: () => void, onClose: () => void) => {
-  const { user, isCraftsman } = useAuth();
-  const { toast } = useToast();
+export const useJobApplication = (jobId: string, onSuccess?: () => void) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [jobData, setJobData] = useState<JobData | null>(null);
+  const [hasApplied, setHasApplied] = useState(false);
+  const { user } = useAuth();
+  const { toast } = useToast();
 
-  useEffect(() => {
-    const fetchJobDetails = async () => {
-      if (jobId) {
-        try {
-          const { data, error } = await supabase
-            .from("jobs")
-            .select("id, title, client_id")
-            .eq("id", jobId)
-            .single();
+  const checkExistingApplication = async () => {
+    if (!user) return false;
 
-          if (error) throw error;
-          if (data) {
-            setJobData({
-              id: data.id,
-              title: data.title,
-              client_id: data.client_id
-            });
-          }
-        } catch (error) {
-          console.error("Error fetching job details:", error);
-        }
+    try {
+      const { data, error } = await supabase
+        .from('job_applications')
+        .select('id')
+        .eq('job_id', jobId)
+        .eq('craftsman_id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error checking application:', error);
+        return false;
       }
-    };
 
-    fetchJobDetails();
-  }, [jobId]);
+      return !!data;
+    } catch (error) {
+      console.error('Error in checkExistingApplication:', error);
+      return false;
+    }
+  };
 
-  const submitApplication = async (values: ApplicationFormValues) => {
-    if (!user || !user.id || !isCraftsman) {
+  const submitApplication = async ({ proposal, budget }: JobApplicationParams) => {
+    if (!user) {
       toast({
-        title: "خطأ",
-        description: "يجب أن تكون صنايعي وتسجل الدخول لتقديم عرض",
-        variant: "destructive",
+        title: "يجب تسجيل الدخول",
+        description: "يجب عليك تسجيل الدخول للتقديم على المهمة",
+        variant: "destructive"
       });
-      return;
+      return { success: false };
     }
 
     setIsSubmitting(true);
+
     try {
-      // Define with Record<string, any> to fix TypeScript error
-      const params: Record<string, any> = {
-        p_craftsman_id: user.id, 
-        p_job_id: jobId 
-      };
+      // Check if user has already applied to this job
+      const alreadyApplied = await checkExistingApplication();
       
-      const { data: rpcData, error: checkError } = await supabase.rpc(
+      if (alreadyApplied) {
+        toast({
+          title: "لقد قمت بالتقديم مسبقاً",
+          description: "لقد قمت بالتقديم على هذه المهمة من قبل",
+          variant: "destructive"
+        });
+        setIsSubmitting(false);
+        return { success: false };
+      }
+
+      // Check application limits using the RPC with correct parameter typing
+      const params = { p_craftsman_id: user.id };
+      
+      const { data: checkResult, error: checkError } = await supabase.rpc(
         'check_job_application',
         params
       );
 
-      if (checkError) throw checkError;
-
-      // Use properly typed response with assertion
-      const response = assertRPCResponse<ApplicationCheckResult>(rpcData);
-      
-      if (response.data && response.data.exists) {
-        toast({
-          title: "لا يمكن التقديم",
-          description: "لقد قدمت عرضاً بالفعل على هذه المهمة",
-          variant: "destructive",
-        });
-        setIsSubmitting(false);
-        return;
+      if (checkError) {
+        throw checkError;
       }
 
-      // إنشاء طلب جديد
-      const { error: applicationError } = await supabase
-        .from("job_applications")
+      const canApply = checkResult.can_apply;
+
+      if (!canApply && !checkResult.is_premium) {
+        toast({
+          title: "تم تجاوز الحد المسموح",
+          description: "لقد تجاوزت الحد المسموح للتقديم المجاني. قم بترقية حسابك للحصول على تقديمات غير محدودة",
+          variant: "destructive"
+        });
+        setIsSubmitting(false);
+        return { success: false };
+      }
+
+      // Apply for the job
+      const { error: applyError } = await supabase
+        .from('job_applications')
         .insert({
           job_id: jobId,
           craftsman_id: user.id,
-          proposal: values.proposal,
-          budget: values.budget,
-          status: "pending",
+          proposal,
+          budget: budget || null
         });
 
-      if (applicationError) throw applicationError;
-
-      // إرسال إشعار للعميل
-      if (jobData && jobData.client_id) {
-        await supabase
-          .from("notifications")
-          .insert({
-            user_id: jobData.client_id,
-            title: "عرض جديد على مهمتك",
-            message: `تلقيت عرضاً جديداً على مهمة "${jobData.title}"`,
-            link: `/job/${jobId}`,
-            read: false,
-          });
+      if (applyError) {
+        throw applyError;
       }
 
+      // Update application count if not premium
+      if (!checkResult.is_premium) {
+        const { error: updateError } = await supabase.rpc(
+          'create_user_applications_count',
+          params
+        );
+
+        if (updateError) {
+          console.error('Error updating application count:', updateError);
+        }
+      }
+
+      setHasApplied(true);
+      
       toast({
         title: "تم التقديم بنجاح",
-        description: "تم إرسال عرضك إلى العميل وسيتم إعلامك في حالة القبول",
+        description: "تم إرسال طلبك بنجاح وسيتم إشعارك عند الرد عليه",
       });
-
-      onSuccess();
-      onClose();
+      
+      if (onSuccess) {
+        onSuccess();
+      }
+      
+      return { success: true };
     } catch (error) {
-      console.error("Error submitting application:", error);
+      console.error('Error submitting application:', error);
+      
       toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء تقديم العرض. يرجى المحاولة مرة أخرى.",
-        variant: "destructive",
+        title: "فشل التقديم",
+        description: "حدث خطأ أثناء التقديم على المهمة. يرجى المحاولة مرة أخرى",
+        variant: "destructive"
       });
+      
+      return { success: false };
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  return { isSubmitting, submitApplication };
+  return {
+    submitApplication,
+    isSubmitting,
+    hasApplied,
+    checkExistingApplication
+  };
 };

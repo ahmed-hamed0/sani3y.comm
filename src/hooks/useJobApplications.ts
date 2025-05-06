@@ -1,181 +1,131 @@
 
-import { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { assertRPCResponse } from "@/utils/supabaseTypes";
-import { JobApplication } from "@/components/jobs/ApplicationCard";
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
-interface JobData {
+export interface Application {
   id: string;
-  title: string;
-  client_id: string;
+  craftsman_id: string;
+  job_id: string;
+  proposal: string;
+  budget: number | null;
+  status: 'pending' | 'accepted' | 'rejected';
+  submitted_at: string;
+  craftsman_name: string;
+  craftsman_avatar: string | null;
+  craftsman_specialty: string;
+  craftsman_rating: number;
 }
 
-export function useJobApplications(jobId: string, isMyJob: boolean, onRefreshNeeded?: () => void) {
-  const { toast } = useToast();
-  const [applications, setApplications] = useState<JobApplication[]>([]);
+export function useJobApplications(
+  jobId: string,
+  isOwner: boolean,
+  onRefreshNeeded?: () => void
+) {
+  const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
-  const [jobData, setJobData] = useState<JobData | null>(null);
-
+  const { toast } = useToast();
+  
   const fetchApplications = async () => {
+    if (!isOwner) return;
+    
     try {
-      const { data: jobInfo, error: jobError } = await supabase
-        .from("jobs")
-        .select("id, title, client_id")
-        .eq("id", jobId)
-        .single();
+      setLoading(true);
+      // Use correctly typed parameters
+      const params = { p_job_id: jobId };
       
-      if (jobError) throw jobError;
-      if (jobInfo) {
-        setJobData({
-          id: jobInfo.id,
-          title: jobInfo.title,
-          client_id: jobInfo.client_id
-        });
+      const { data, error } = await supabase.rpc(
+        'get_job_applications',
+        params
+      );
+      
+      if (error) {
+        throw error;
       }
-
-      // Define with Record<string, any> to fix TypeScript error
-      const params: Record<string, any> = { 
-        job_id_param: jobId 
-      };
       
-      const { data: rpcData, error } = await supabase
-        .rpc("get_job_applications", params)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      
-      const response = assertRPCResponse<JobApplication[]>(rpcData);
-      setApplications(response.data || []);
+      if (data) {
+        setApplications(data);
+      }
     } catch (error) {
-      console.error("Error fetching applications:", error);
-      toast({
-        title: "خطأ",
-        description: "تعذر تحميل طلبات التقديم",
-        variant: "destructive",
-      });
+      console.error('Error fetching applications:', error);
     } finally {
       setLoading(false);
     }
   };
-
+  
   useEffect(() => {
-    fetchApplications();
-  }, [jobId, toast]);
-
-  const handleAccept = async (applicationId: string, craftsmanId: string, craftsmanName: string) => {
-    if (!isMyJob) return;
-    
+    if (isOwner) {
+      fetchApplications();
+    }
+  }, [jobId, isOwner]);
+  
+  const handleAccept = async (applicationId: string) => {
     try {
-      // تحديث حالة الطلب إلى مقبول
+      // Update application status
       const { error: updateError } = await supabase
-        .from("job_applications")
-        .update({ status: "accepted" })
-        .eq("id", applicationId);
+        .from('job_applications')
+        .update({ status: 'accepted' })
+        .eq('id', applicationId)
+        .select('job_id, craftsman_id')
+        .single();
       
-      if (updateError) throw updateError;
-      
-      // تحديث حالة الوظيفة إلى قيد التنفيذ
-      const { error: jobUpdateError } = await supabase
-        .from("jobs")
-        .update({ status: "in_progress", craftsman_id: craftsmanId })
-        .eq("id", jobId);
-      
-      if (jobUpdateError) throw jobUpdateError;
-      
-      // رفض جميع الطلبات الأخرى
-      const { error: rejectError } = await supabase
-        .from("job_applications")
-        .update({ status: "rejected" })
-        .eq("job_id", jobId)
-        .neq("id", applicationId);
-      
-      if (rejectError) throw rejectError;
-
-      // إرسال إشعار للصنايعي
-      if (jobData) {
-        await supabase
-          .from("notifications")
-          .insert({
-            user_id: craftsmanId,
-            title: "تم قبول عرضك",
-            message: `تم قبول عرضك على مهمة "${jobData.title}"`,
-            link: `/job/${jobId}`,
-            read: false,
-          });
+      if (updateError) {
+        throw updateError;
       }
       
-      toast({
-        title: "تم قبول العرض",
-        description: `تم قبول عرض ${craftsmanName} وإسناد المهمة له`,
-      });
+      // Refresh the list
+      fetchApplications();
       
-      // تحديث البيانات
       if (onRefreshNeeded) {
         onRefreshNeeded();
       }
       
-      // تحديث قائمة الطلبات
-      setApplications(prevApps => 
-        prevApps.map(app => ({
-          ...app,
-          status: app.id === applicationId ? "accepted" : "rejected"
-        }))
-      );
+      toast({
+        title: "تم قبول العرض",
+        description: "تم قبول العرض بنجاح"
+      });
     } catch (error) {
-      console.error("Error accepting application:", error);
+      console.error('Error accepting application:', error);
       toast({
         title: "خطأ",
-        description: "تعذر قبول العرض. يرجى المحاولة مرة أخرى.",
-        variant: "destructive",
+        description: "حدث خطأ أثناء قبول العرض",
+        variant: "destructive"
       });
     }
   };
-
-  const handleReject = async (applicationId: string, craftsmanId: string, craftsmanName: string) => {
-    if (!isMyJob) return;
-    
+  
+  const handleReject = async (applicationId: string) => {
     try {
       const { error } = await supabase
-        .from("job_applications")
-        .update({ status: "rejected" })
-        .eq("id", applicationId);
+        .from('job_applications')
+        .update({ status: 'rejected' })
+        .eq('id', applicationId);
       
-      if (error) throw error;
-      
-      // إرسال إشعار للصنايعي
-      if (jobData) {
-        await supabase
-          .from("notifications")
-          .insert({
-            user_id: craftsmanId,
-            title: "تم رفض عرضك",
-            message: `تم رفض عرضك على مهمة "${jobData.title}"`,
-            link: `/job/${jobId}`,
-            read: false,
-          });
+      if (error) {
+        throw error;
       }
+      
+      // Refresh the list
+      fetchApplications();
       
       toast({
         title: "تم رفض العرض",
-        description: `تم رفض عرض ${craftsmanName} بنجاح`,
+        description: "تم رفض العرض بنجاح"
       });
-      
-      // تحديث قائمة الطلبات
-      setApplications(prevApps => 
-        prevApps.map(app => 
-          app.id === applicationId ? { ...app, status: "rejected" } : app
-        )
-      );
     } catch (error) {
-      console.error("Error rejecting application:", error);
+      console.error('Error rejecting application:', error);
       toast({
         title: "خطأ",
-        description: "تعذر رفض العرض. يرجى المحاولة مرة أخرى.",
-        variant: "destructive",
+        description: "حدث خطأ أثناء رفض العرض",
+        variant: "destructive"
       });
     }
   };
 
-  return { applications, loading, handleAccept, handleReject };
+  return {
+    applications,
+    loading,
+    handleAccept,
+    handleReject
+  };
 }
