@@ -6,7 +6,6 @@ import { Spinner } from '@/components/ui/spinner';
 import { toast } from '@/components/ui/sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/auth';
-import { assertStringParam } from '@/utils/supabaseTypes';
 
 interface ReviewFormProps {
   craftsmanId: string;
@@ -39,12 +38,11 @@ export const ReviewForm = ({ craftsmanId, onReviewSubmit }: ReviewFormProps) => 
     try {
       setIsSubmitting(true);
 
-      // Fix: Use assertStringParam for craftsmanId
       const { data, error } = await supabase
         .from('reviews')
         .insert([
           {
-            reviewed_id: assertStringParam(craftsmanId),
+            reviewed_id: craftsmanId,
             reviewer_id: user.id,
             rating,
             comment,

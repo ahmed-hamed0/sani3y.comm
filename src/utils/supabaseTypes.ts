@@ -30,3 +30,10 @@ export interface CraftsmanReview {
   comment: string;
   created_at: string;
 }
+
+/**
+ * Utility function to assert string parameters (needed for RPC calls)
+ */
+export function assertStringParam(value: string): string {
+  return value;
+}

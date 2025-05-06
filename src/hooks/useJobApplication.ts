@@ -3,17 +3,11 @@ import { useState } from 'react';
 import { useAuth } from '@/hooks/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { ApplicationCheckResult } from '@/utils/supabaseTypes';
 
 export interface JobApplicationParams {
   proposal: string;
   budget?: number;
-}
-
-// Define the response type from the check_job_application RPC function
-interface ApplicationCheckResult {
-  can_apply: boolean;
-  is_premium: boolean;
-  free_applications_remaining?: number;
 }
 
 export const useJobApplication = (jobId: string, onSuccess?: () => void, onClose?: () => void) => {
@@ -83,7 +77,6 @@ export const useJobApplication = (jobId: string, onSuccess?: () => void, onClose
         throw checkError;
       }
 
-      // Add null checks for checkResult
       if (!checkResult) {
         throw new Error('Failed to check application limits');
       }
@@ -115,7 +108,7 @@ export const useJobApplication = (jobId: string, onSuccess?: () => void, onClose
       }
 
       // Update application count if not premium
-      if (checkResult && !checkResult.is_premium) {
+      if (!checkResult.is_premium) {
         const { error: updateError } = await supabase.rpc(
           'create_user_applications_count',
           params

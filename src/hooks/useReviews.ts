@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Review } from '@/components/reviews/types';
-import { assertRPCResponse } from '@/utils/supabaseTypes';
+import { CraftsmanReview } from '@/utils/supabaseTypes';
 
 export const useReviews = (craftsmanId: string) => {
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -15,7 +15,7 @@ export const useReviews = (craftsmanId: string) => {
       // Define the parameters properly for TypeScript
       const params = { p_craftsman_id: craftsmanId };
       
-      const { data, error } = await supabase.rpc(
+      const { data, error } = await supabase.rpc<CraftsmanReview[]>(
         'get_craftsman_reviews', 
         params
       );
@@ -24,15 +24,14 @@ export const useReviews = (craftsmanId: string) => {
         throw error;
       }
       
-      // Properly assert the response type
-      const typedData = assertRPCResponse<Review[]>(data);
-      
-      setReviews(typedData.data || []);
-      setReviewsCount(typedData.data.length);
-      
-      if (typedData.data.length > 0) {
-        const sum = typedData.data.reduce((acc, review) => acc + review.rating, 0);
-        setAverageRating(sum / typedData.data.length);
+      if (data) {
+        setReviews(data);
+        setReviewsCount(data.length);
+        
+        if (data.length > 0) {
+          const sum = data.reduce((acc, review) => acc + review.rating, 0);
+          setAverageRating(sum / data.length);
+        }
       }
     } catch (error) {
       console.error('Error fetching reviews:', error);

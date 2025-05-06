@@ -85,7 +85,7 @@ export const useJobDetails = (jobId: string | undefined) => {
   
   // Mark job as complete
   const handleMarkComplete = async () => {
-    if (!job || !user) return;
+    if (!job || !user || !jobId) return;
     
     try {
       // Use properly typed parameters
