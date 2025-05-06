@@ -34,7 +34,7 @@ export function useJobApplications(
       // Use correctly typed parameters
       const params = { p_job_id: jobId };
       
-      const { data, error } = await supabase.rpc(
+      const { data, error } = await supabase.rpc<Application[]>(
         'get_job_applications',
         params
       );

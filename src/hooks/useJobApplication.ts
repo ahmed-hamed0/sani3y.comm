@@ -9,6 +9,13 @@ export interface JobApplicationParams {
   budget?: number;
 }
 
+// Define the response type from the check_job_application RPC function
+interface ApplicationCheckResult {
+  can_apply: boolean;
+  is_premium: boolean;
+  free_applications_remaining?: number;
+}
+
 export const useJobApplication = (jobId: string, onSuccess?: () => void, onClose?: () => void) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
@@ -67,7 +74,7 @@ export const useJobApplication = (jobId: string, onSuccess?: () => void, onClose
       // Check application limits using the RPC with correct parameter typing
       const params = { p_craftsman_id: user.id };
       
-      const { data: checkResult, error: checkError } = await supabase.rpc(
+      const { data: checkResult, error: checkError } = await supabase.rpc<ApplicationCheckResult>(
         'check_job_application',
         params
       );

@@ -26,7 +26,7 @@ export function JobApplication({
   onClose,
   onSuccess
 }: JobApplicationProps) {
-  const { isSubmitting, submitApplication } = useJobApplication(jobId, onSuccess, onClose);
+  const { isSubmitting, submitApplication } = useJobApplication(jobId, onSuccess);
   const { isSubscribed, remainingFreeApplications, useApplication } = useSubscription();
   const [showSubscriptionPrompt, setShowSubscriptionPrompt] = useState(false);
 
