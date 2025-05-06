@@ -9,7 +9,7 @@ export interface JobApplicationParams {
   budget?: number;
 }
 
-export const useJobApplication = (jobId: string, onSuccess?: () => void) => {
+export const useJobApplication = (jobId: string, onSuccess?: () => void, onClose?: () => void) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
   const { user } = useAuth();
@@ -76,6 +76,11 @@ export const useJobApplication = (jobId: string, onSuccess?: () => void) => {
         throw checkError;
       }
 
+      // Add null checks for checkResult
+      if (!checkResult) {
+        throw new Error('Failed to check application limits');
+      }
+
       const canApply = checkResult.can_apply;
 
       if (!canApply && !checkResult.is_premium) {
@@ -103,7 +108,7 @@ export const useJobApplication = (jobId: string, onSuccess?: () => void) => {
       }
 
       // Update application count if not premium
-      if (!checkResult.is_premium) {
+      if (checkResult && !checkResult.is_premium) {
         const { error: updateError } = await supabase.rpc(
           'create_user_applications_count',
           params

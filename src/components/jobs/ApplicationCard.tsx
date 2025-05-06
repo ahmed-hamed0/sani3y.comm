@@ -13,26 +13,13 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { getStatusBadge } from "./utils/applicationUtils";
-
-export interface JobApplication {
-  id: string;
-  status: string;
-  created_at: string;
-  budget: number;
-  proposal: string;
-  craftsman: {
-    id: string;
-    full_name?: string;
-    avatar_url?: string;
-    specialty?: string;
-  };
-}
+import { Application } from "@/hooks/useJobApplications";
 
 interface ApplicationCardProps {
-  application: JobApplication;
+  application: Application;
   isMyJob: boolean;
-  onAccept: (applicationId: string, craftsmanId: string, craftsmanName: string) => void;
-  onReject: (applicationId: string, craftsmanId: string, craftsmanName: string) => void;
+  onAccept: (applicationId: string) => void;
+  onReject: (applicationId: string) => void;
 }
 
 export const ApplicationCard = ({ 
@@ -47,24 +34,24 @@ export const ApplicationCard = ({
         <div className="flex justify-between items-start">
           <div className="flex items-center gap-3">
             <Avatar>
-              <AvatarImage src={application.craftsman?.avatar_url || ""} />
+              <AvatarImage src={application.craftsman_avatar || ""} />
               <AvatarFallback>
-                {application.craftsman?.full_name?.[0] || "C"}
+                {application.craftsman_name?.[0] || "C"}
               </AvatarFallback>
             </Avatar>
             <div>
               <CardTitle className="text-lg">
-                {application.craftsman?.full_name || "صنايعي"}
+                {application.craftsman_name || "صنايعي"}
               </CardTitle>
               <CardDescription>
-                {application.craftsman?.specialty || "متخصص"}
+                {application.craftsman_specialty || "متخصص"}
               </CardDescription>
             </div>
           </div>
           <div className="flex flex-col items-end gap-1">
             {getStatusBadge(application.status)}
             <span className="text-sm text-muted-foreground">
-              {formatDistanceToNow(new Date(application.created_at), { addSuffix: true, locale: ar })}
+              {formatDistanceToNow(new Date(application.submitted_at), { addSuffix: true, locale: ar })}
             </span>
           </div>
         </div>
@@ -72,7 +59,7 @@ export const ApplicationCard = ({
       <CardContent className="pb-3">
         <div className="mb-2">
           <span className="font-medium">السعر المقترح: </span>
-          <span className="text-primary">{application.budget} جنيه</span>
+          <span className="text-primary">{application.budget || 0} جنيه</span>
         </div>
         <p className="text-gray-700">{application.proposal}</p>
       </CardContent>
@@ -82,11 +69,7 @@ export const ApplicationCard = ({
             variant="outline"
             size="sm"
             className="text-red-500 hover:text-red-700 hover:bg-red-50"
-            onClick={() => onReject(
-              application.id, 
-              application.craftsman?.id, 
-              application.craftsman?.full_name || ""
-            )}
+            onClick={() => onReject(application.id)}
           >
             <X className="mr-1 h-4 w-4" />
             رفض
@@ -94,11 +77,7 @@ export const ApplicationCard = ({
           <Button
             size="sm"
             className="bg-green-600 hover:bg-green-700"
-            onClick={() => onAccept(
-              application.id, 
-              application.craftsman?.id, 
-              application.craftsman?.full_name || ""
-            )}
+            onClick={() => onAccept(application.id)}
           >
             <Check className="mr-1 h-4 w-4" />
             قبول

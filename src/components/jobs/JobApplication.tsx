@@ -30,7 +30,7 @@ export function JobApplication({
   const { isSubscribed, remainingFreeApplications, useApplication } = useSubscription();
   const [showSubscriptionPrompt, setShowSubscriptionPrompt] = useState(false);
 
-  const handleSubmit = async (values) => {
+  const handleSubmit = async (values: any) => {
     // إذا كان المستخدم مشترك أو لديه طلبات مجانية متبقية
     if (isSubscribed || remainingFreeApplications > 0) {
       const canProceed = await useApplication();
