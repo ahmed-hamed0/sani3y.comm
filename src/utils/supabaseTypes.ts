@@ -1,22 +1,32 @@
 
+// Define common Supabase RPC function response types
+
 /**
- * Type guard to assert RPC response types for Supabase
- * This utility helps safely type the response from Supabase RPC calls
+ * Utility type for Supabase RPC responses
  */
 export interface RPCResponse<T> {
-  data: T;
-  error?: Error;
+  data: T | null;
+  error: any;
 }
 
-// Utility to assert the type of RPC response data
-export function assertRPCResponse<T>(data: any): RPCResponse<T> {
-  return {
-    data: data as T,
-    error: undefined
-  };
+/**
+ * Type for check_job_application RPC function result
+ */
+export interface ApplicationCheckResult {
+  can_apply: boolean;
+  is_premium: boolean;
+  free_applications_remaining?: number;
 }
 
-// Helper function to assert string parameters (needed for RPC calls)
-export function assertStringParam(value: string): string {
-  return value;
+/**
+ * Type for get_craftsman_reviews RPC function result
+ */
+export interface CraftsmanReview {
+  id: string;
+  reviewer_id: string;
+  reviewer_name: string;
+  reviewer_avatar?: string | null;
+  rating: number;
+  comment: string;
+  created_at: string;
 }

@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Form } from '@/components/ui/form';
@@ -9,6 +10,7 @@ import BasicInfoStep from './BasicInfoStep';
 import LocationStep from './LocationStep';
 import CraftsmanDetailsStep from './CraftsmanDetailsStep';
 import { Spinner } from '@/components/ui/spinner';
+import { useEffect } from 'react';
 
 interface SignUpFormProps {
   initialRole?: 'client' | 'craftsman';
@@ -42,16 +44,21 @@ const SignUpForm = ({ initialRole = 'client' }: SignUpFormProps) => {
   const countryCode = form.watch('countryCode');
   const phone = form.watch('phone');
 
-  // إضافة مراقبة لرقم الهاتف للتحقق من صحته عند اختيار مصر
-  if (countryCode === '+20' && phone) {
-    const isValid = phone.startsWith('1') && phone.length === 10 && /^\d+$/.test(phone);
-    if (!isValid && phone.length > 0) {
-      form.setError('phone', {
-        type: 'manual',
-        message: 'رقم الهاتف المصري يجب أن يكون 10 أرقام تبدأ برقم 1'
-      });
+  // Move phone validation to useEffect to avoid infinite renders
+  useEffect(() => {
+    if (countryCode === '+20' && phone) {
+      const isValid = phone.startsWith('1') && phone.length === 10 && /^\d+$/.test(phone);
+      if (!isValid && phone.length > 0) {
+        form.setError('phone', {
+          type: 'manual',
+          message: 'رقم الهاتف المصري يجب أن يكون 10 أرقام تبدأ برقم 1'
+        });
+      } else {
+        // Clear the error if the phone is now valid
+        form.clearErrors('phone');
+      }
     }
-  }
+  }, [countryCode, phone, form]);
 
   const handleNextStep = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,7 +74,6 @@ const SignUpForm = ({ initialRole = 'client' }: SignUpFormProps) => {
     setStep(1);
   };
   
-  // Fix: Change the signature to match what LocationStep expects
   const goToCraftsmanDetails = (e: React.FormEvent) => {
     e.preventDefault();
     const step2Fields = ['governorate', 'city', 'agreeTerms'];
