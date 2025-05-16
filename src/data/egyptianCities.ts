@@ -7,7 +7,7 @@ export const egyptianCities  = [
   "شمال سيناء", "جنوب سيناء"
 ];
 
-export const egyptianCities: Record<string, string[]> = {
+export const cities: Record<string, string[]> = {
   "القاهرة": [
     "وسط البلد", "المعادي", "مدينة نصر", "مصر الجديدة", "العباسية", "حلوان", "شبرا", 
     "عين شمس", "التجمع الخامس", "الزمالك", "المرج", "السيدة زينب", "المطرية", "الوايلي", 
